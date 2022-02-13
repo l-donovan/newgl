@@ -27,6 +27,7 @@ class Window {
         GLFWwindow *win;
         vector<Shader*> shaders;
 
+
         std::map<std::string, mesh_t*> meshes;
 
         int fps_target = 60;
@@ -37,7 +38,9 @@ class Window {
         void draw();
 
         static Engine *engine;
-        static std::map<EventType, std::vector<std::shared_ptr<Attribute>>> attribute_event_subscribers;
+
+        typedef std::map<EventType, std::vector<std::shared_ptr<Attribute>>> AttributeEventMap;
+        static AttributeEventMap attribute_event_subscribers;
 
         static void global_cursor_pos_callback(GLFWwindow *window, double x_pos, double y_pos);
         static void global_window_size_callback(GLFWwindow *window, int width, int height);
