@@ -1,0 +1,8 @@
+_build
+dist
+**/.DS_Store
+.vs
+out
+compile_commands.json
+.ccls-cache/
+.cache
