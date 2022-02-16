@@ -30,7 +30,7 @@ using std::string;
 std::atomic<bool> run{true};
 
 Engine* Window::engine = nullptr;
-auto Window::attribute_event_subscribers = std::map<EventType, std::vector<std::shared_ptr<Attribute>>>();
+Window::AttributeEventMap Window::attribute_event_subscribers = {};
 
 int Window::width = 0;
 int Window::height = 0;
