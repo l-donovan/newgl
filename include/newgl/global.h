@@ -20,3 +20,6 @@
     TARGET[4 * (INDEX) + 2] = V3;\
     TARGET[4 * (INDEX) + 3] = V4;\
 }
+
+#define PI  3.14159265359
+#define TAU 6.28318530718

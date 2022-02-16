@@ -1,5 +1,8 @@
 #pragma once
 
+// Forward declarations
+class Shader;
+
 #include <glm/glm.hpp>
 
 #include <plog/Log.h>
@@ -7,6 +10,7 @@
 #include "global.h"
 #include "attribute.h"
 #include "common.h"
+#include "shader.h"
 #include "mesh.h"
 
 #include <memory>
@@ -22,8 +26,9 @@ class Layer {
         std::queue<resource_request_t> request_queue;
     protected:
         std::vector<std::shared_ptr<Attribute>> attributes;
+        bool draw_with_depth = true;
     public:
-        int shader_id;
+        Shader *shader;
 
         virtual void setup() = 0;
         virtual void draw(glm::mat4 view, glm::mat4 projection, camera_t camera) = 0;
@@ -48,5 +53,13 @@ class Layer {
 
         std::vector<std::shared_ptr<Attribute>> get_attributes() {
             return this->attributes;
+        };
+
+        void add_attribute(std::shared_ptr<Attribute> attr) {
+            this->attributes.push_back(attr);
+        };
+
+        bool depth_enabled() {
+            return this->draw_with_depth;
         };
 };

@@ -3,10 +3,18 @@
 #include "newgl/engine.h"
 #include "newgl/event.h"
 #include "newgl/shader.h"
+#include "newgl/window.h"
+
 #include "newgl/example_layer.h"
 #include "newgl/entity_layer.h"
 #include "newgl/text_layer.h"
-#include "newgl/window.h"
+#include "newgl/sky_layer.h"
+#include "newgl/script_layer.h"
+
+#include "newgl/attributes/capture_framerate.h"
+#include "newgl/attributes/first_person_camera.h"
+#include "newgl/attributes/basic_motion.h"
+#include "newgl/attributes/toggle_wireframe.h"
 
 #include <optional>
 #include <string>
@@ -22,27 +30,66 @@ Shader text_shader(
     ROOT_DIR + "/resources/shaders/text.v.glsl",
     ROOT_DIR + "/resources/shaders/text.f.glsl");
 
-EntityLayer entity_layer;
+Shader sky_shader(
+    ROOT_DIR + "/resources/shaders/sky.v.glsl",
+    ROOT_DIR + "/resources/shaders/sky.f.glsl");
+
+EntityLayer suzanne;
+EntityLayer cactus;
 TextLayer framerate_layer;
+SkyLayer skybox;
+ScriptLayer script_layer;
 
 Engine::Engine() {
+    framerate_layer.add_attribute(std::make_shared<CaptureFramerate>(&framerate_layer));
+
+    suzanne.request_resource(Texture, ROOT_DIR + "/resources/images/chinese_garden.png");
+    suzanne.request_resource(Mesh, ROOT_DIR + "/resources/models/suzanne.obj");
+    suzanne.add_attribute(std::make_shared<BasicMotion>(&suzanne));
+    suzanne.add_attribute(std::make_shared<ToggleWireframe>(&suzanne));
+
+    cactus.request_resource(Texture, ROOT_DIR + "/resources/images/cactus.png");
+    cactus.request_resource(Mesh, ROOT_DIR + "/resources/models/cactus.obj");
+    cactus.add_attribute(std::make_shared<ToggleWireframe>(&cactus));
+    cactus.set_scale(4.0f);
+
+    skybox.request_resource(Texture, ROOT_DIR + "/resources/images/chinese_garden.png");
+
+    script_layer.add_attribute(std::make_shared<FirstPersonCamera>());
 }
 
-Engine::~Engine() {
-}
+Engine::~Engine() {}
 
 void Engine::pre_window_startup() {
     // We have to send some events to the window to setup our layers and shaders
-    this->add_outgoing_event({LayerModifyRequest, {
+
+    this->outgoing_events.enqueue({LayerModifyRequest, {
         EVENT_LAYER_ADD,
-        &entity_layer,
+        &suzanne,
         &base_shader
     }});
 
-    this->add_outgoing_event({LayerModifyRequest, {
+    this->outgoing_events.enqueue({LayerModifyRequest, {
+        EVENT_LAYER_ADD,
+        &cactus,
+        &base_shader
+    }});
+
+    this->outgoing_events.enqueue({LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &framerate_layer,
         &text_shader
+    }});
+
+    this->outgoing_events.enqueue({LayerModifyRequest, {
+        EVENT_LAYER_ADD,
+        &skybox,
+        &sky_shader
+    }});
+
+    this->outgoing_events.enqueue({LayerModifyRequest, {
+        EVENT_LAYER_ADD_BLANK,
+        &script_layer
     }});
 }
 
@@ -55,97 +102,75 @@ void Engine::post_window_startup() {
 #else
     framerate_layer.set_font("/home/luke/.local/share/fonts/Blex Mono Nerd Font Complete Mono.ttf", 14);
 #endif
-
-    framerate_layer.set_position(0.0f, 0.0f);
 }
 
 void Engine::handle_key_event(int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        this->add_outgoing_event({LayerUpdateRequest, {}});
+        this->outgoing_events.enqueue({LayerUpdateRequest, {}});
     } else if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        this->add_outgoing_event({LayerUpdateRequest, {}});
+        this->outgoing_events.enqueue({LayerUpdateRequest, {}});
     }
 }
 
 void Engine::process_resource_requests() {
     std::optional<resource_request_t> request;
-    while ((request = entity_layer.pop_resource_request()).has_value()) {
-        switch (request->type) {
-        case Mesh:
-            this->add_outgoing_event({MeshLoadRequest, {&entity_layer, request->name}});
-            break;
-        case Texture:
-            this->add_outgoing_event({TextureLoadRequest, {&entity_layer, request->name}});
-            break;
-        default:
-            PLOGE << "Got unknown resource request type";
-            break;
+
+    for (auto layer : {(Layer*) &suzanne, (Layer*) &cactus, (Layer*) &framerate_layer, (Layer*) &skybox}) { // TODO: This is awful
+        while ((request = layer->pop_resource_request()).has_value()) {
+            switch (request->type) {
+            case Mesh:
+                this->outgoing_events.enqueue({MeshLoadRequest, {layer, request->name}});
+                break;
+            case Texture:
+                this->outgoing_events.enqueue({TextureLoadRequest, {layer, request->name}});
+                break;
+            default:
+                PLOGW << "Got unknown resource request type";
+                break;
+            }
         }
     }
 }
 
-void Engine::process_events() {
+void Engine::process_events(Engine *engine, std::atomic<bool> *run_flag, bool single_pass) {
     // This is where the logic is actually handled
     // 1. Process incoming events from the window
     // 2. Send outgoing events to the window
 
-    std::optional<Event> event;
-    while ((event = this->pop_incoming_event()).has_value()) {
-        switch (event->type) {
+    Event event;
+
+    while (!single_pass || !engine->incoming_events.empty()) {
+        event = engine->incoming_events.dequeue();
+
+        switch (event.type) {
         case WindowResize:
             PLOGI << "Got window resize event";
-            PLOGI << "W: " << INT(*event, 0) << ", H: " << INT(*event, 1);
-            this->add_outgoing_event({LayerUpdateRequest, {}});
+            PLOGI << "W: " << INT(0) << ", H: " << INT(1);
+            engine->outgoing_events.enqueue({LayerUpdateRequest, {}});
             break;
         case Key:
-            this->handle_key_event(INT(*event, 0), INT(*event, 1), INT(*event, 2), INT(*event, 3));
+            engine->handle_key_event(INT(0), INT(1), INT(2), INT(3));
             break;
         case MeshLoad:
-            LAYER(*event, 0)->receive_resource(Mesh, STRING(*event, 1), VOID(*event, 2));
+            LAYER(0)->receive_resource(Mesh, STRING(1), VOID(2));
             break;
         case TextureLoad:
-            LAYER(*event, 0)->receive_resource(Texture, STRING(*event, 1), VOID(*event, 2));
+            LAYER(0)->receive_resource(Texture, STRING(1), VOID(2));
             break;
+        case Break:
+            PLOGI << "Got Break event. Exiting";
+            return;
         case CursorPosition:
-            framerate_layer.set_position(
-                DOUBLE(*event, 0),
-                DOUBLE(*event, 1)
-            );
-            break;
         case Tick1:
         case Tick10:
         case Tick100:
         case Framerate:
+        case BeginDraw:
+        case EndDraw:
             break;
         default:
             PLOGW << "Got unknown event type";
             break;
         }
     }
-}
-
-std::optional<Event> Engine::pop_incoming_event() {
-    if (this->incoming_event_queue.empty())
-        return {};
-
-    Event event = this->incoming_event_queue.front();
-    this->incoming_event_queue.pop();
-    return event;
-}
-
-void Engine::add_outgoing_event(Event event) {
-    this->outgoing_event_queue.push(event);
-}
-
-std::optional<Event> Engine::pop_outgoing_event() {
-    if (this->outgoing_event_queue.empty())
-        return {};
-
-    Event event = this->outgoing_event_queue.front();
-    this->outgoing_event_queue.pop();
-    return event;
-}
-
-void Engine::add_incoming_event(Event event) {
-    this->incoming_event_queue.push(event);
 }

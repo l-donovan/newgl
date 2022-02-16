@@ -5,14 +5,22 @@
 
 #include <plog/Log.h>
 
-GLuint load_texture(const char* filename) {
+SDL_Surface* load_texture(const char* filename) {
     GLuint texture_id;
 
     SDL_Surface *res_texture = IMG_Load(filename);
     if (res_texture == nullptr) {
         PLOGE << "Error: can't load image " << filename << ": " << SDL_GetError();
-        return -1; // TODO
+    } else {
+        PLOGD << "Loaded texture " << filename;
     }
+
+    return res_texture;
+
+}
+
+GLuint bind_texture(SDL_Surface *res_texture) {
+    GLuint texture_id;
 
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -29,7 +37,7 @@ GLuint load_texture(const char* filename) {
         res_texture->pixels);
     SDL_FreeSurface(res_texture);
 
-    PLOGD << "Loaded texture " << filename;
+    PLOGD << "Bound texture";
 
     return texture_id;
 }

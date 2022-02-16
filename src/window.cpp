@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <plog/Log.h>
 
 #include <algorithm>
@@ -24,6 +27,21 @@
 
 using std::string;
 
+std::atomic<bool> run{true};
+
+Engine* Window::engine = nullptr;
+auto Window::attribute_event_subscribers = std::map<EventType, std::vector<std::shared_ptr<Attribute>>>();
+
+int Window::width = 0;
+int Window::height = 0;
+
+glm::mat4 Window::view = glm::mat4(1.0);
+
+int frame_count = 0;
+float frame_duration_sum = 0.0f;
+int fps_samples = 60;
+long total_frame_count = 0;
+
 Window::Window(string window_title, int initial_width, int initial_height) {
     this->window_title = window_title;
     this->initial_width = initial_width;
@@ -32,19 +50,7 @@ Window::Window(string window_title, int initial_width, int initial_height) {
     this->single_frame_duration = std::chrono::duration<double, std::milli>(1000.0f / this->fps_target);
 }
 
-Window::~Window() {
-}
-
-Engine* Window::engine = nullptr;
-auto Window::attribute_event_subscribers = std::map<EventType, std::vector<std::shared_ptr<Attribute>>>();
-
-int Window::width = 0;
-int Window::height = 0;
-
-int frame_count = 0;
-float frame_duration_sum = 0.0f;
-int fps_samples = 60;
-long total_frame_count = 0;
+Window::~Window() {}
 
 void Window::attach(Engine *engine) {
     Window::engine = engine;
@@ -78,7 +84,7 @@ void Window::global_key_event_callback(GLFWwindow *window, int key, int scancode
 }
 
 void Window::send_event(Event e) {
-    Window::engine->add_incoming_event(e);
+    Window::engine->incoming_events.enqueue(e);
 
     auto attributes = Window::attribute_event_subscribers[e.type];
 
@@ -95,7 +101,8 @@ bool Window::startup() {
     // First we want to check if the attached Engine needs us to do anything.
     // Any GL/GLFW-specific events will absolutely break things, however, since
     // neither are initialized at this point.
-    this->process_events();
+
+    Window::process_events(this, &run, true);
 
     glfwSetErrorCallback(glfw_error_callback);
 
@@ -130,6 +137,7 @@ bool Window::startup() {
     glfwSwapInterval(1);
 
     glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Shader compilation is deferred
@@ -143,14 +151,83 @@ bool Window::startup() {
     return true;
 }
 
+glm::mat4 construct_view(glm::vec3 eye, float pitch, float yaw) {
+    float cos_pitch = cos(pitch);
+    float sin_pitch = sin(pitch);
+    float cos_yaw = cos(yaw);
+    float sin_yaw = sin(yaw);
+
+    glm::vec3 x_axis(cos_yaw, 0, -sin_yaw);
+    glm::vec3 y_axis(sin_yaw * sin_pitch, cos_pitch, cos_yaw * sin_pitch);
+    glm::vec3 z_axis(sin_yaw * cos_pitch, -sin_pitch, cos_pitch * cos_yaw);
+
+    // Create a 4x4 view matrix from the right, up, forward and eye position vectors
+    return {
+        {x_axis.x, y_axis.x, z_axis.x, 0},
+        {x_axis.y, y_axis.y, z_axis.y, 0},
+        {x_axis.z, y_axis.z, z_axis.z, 0},
+        {-glm::dot(x_axis, eye), -glm::dot(y_axis, eye), -glm::dot(z_axis, eye), 1}
+    };
+}
+
 void Window::draw() {
     // Clear the colorbuffer
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    struct camera_t camera = {
+        .position = glm::vec3(0.0, 2.0, 4.0),
+        .target   = glm::vec3(0.0, 0.0, 0.0),
+        .up       = glm::vec3(0.0, 1.0, 0.0),
+        .vfov     = 45.0
+    };
+
+    float ratio = 1.0f * Window::width / Window::height;
+    //glm::mat4 view = glm::lookAt(camera.position, camera.target, camera.up);
+    glm::mat4 projection = glm::perspective(camera.vfov, ratio, 0.1f, 100.0f);
+
+    glm::mat4 view = construct_view(camera.position, -0.3, 0.75 * 2.0 * 2.141592);
+
+    // TODO: We should sort the draws by depth, or at least set aside a skybox to draw separately
+
+    glDepthMask(GL_FALSE);
+
+    bool used;
 
     for (Shader *shader : this->shaders) {
-        shader->use();
-        shader->draw_layers();
+        used = false;
+
+        for (Layer *layer : shader->layers) {
+            if (!layer->depth_enabled()) {
+                if (!used) {
+                    shader->use();
+                    used = true;
+                }
+
+                Window::send_event({BeginDraw, {layer}});
+                layer->draw(Window::view, projection, camera);
+                Window::send_event({EndDraw, {layer}});
+            }
+        }
+    }
+
+    glDepthMask(GL_TRUE);
+
+    for (Shader *shader : this->shaders) {
+        used = false;
+
+        for (Layer *layer : shader->layers) {
+            if (layer->depth_enabled()) {
+                if (!used) {
+                    shader->use();
+                    used = true;
+                }
+
+                Window::send_event({BeginDraw, {layer}});
+                layer->draw(Window::view, projection, camera);
+                Window::send_event({EndDraw, {layer}});
+            }
+        }
     }
 
     glfwSwapBuffers(this->win);
@@ -159,6 +236,8 @@ void Window::draw() {
 void Window::resize_window(int width, int height) {
     PLOGI << "Got window resize request";
     PLOGI << "W: " << width << ", H: " << height;
+
+    PLOGI << "RESIZE - " << std::this_thread::get_id();
 
     glfwSetWindowSize(this->win, width, height);
     glViewport(0, 0, width, height);
@@ -194,7 +273,7 @@ mesh_t* Window::load_mesh(string filename) {
 void Window::process_mesh_load_request(Layer *requesting_layer, string filename) {
     mesh_t *mesh = this->load_mesh(filename);
 
-    Window::engine->add_incoming_event({MeshLoad, {
+    Window::mt_queue.enqueue({MTNotifyMeshLoad, {
         requesting_layer,
         filename,
         mesh
@@ -202,48 +281,88 @@ void Window::process_mesh_load_request(Layer *requesting_layer, string filename)
 }
 
 void Window::process_texture_load_request(Layer *requesting_layer, string filename) {
-    GLuint texture = load_texture(filename.c_str());
+    SDL_Surface *texture = load_texture(filename.c_str());
+
+    Window::mt_queue.enqueue({MTBindTexture, {requesting_layer, filename, texture}});
+}
+
+void Window::process_mt_bind_texture(Layer *requesting_layer, string filename, SDL_Surface *texture) {
+    GLuint texture_id = bind_texture(texture);
 
     void *ptr = malloc(sizeof(GLuint));
-    *((int*)ptr) = texture;
+    *((int*)ptr) = texture_id;
 
-    Window::engine->add_incoming_event({TextureLoad, {
+    Window::engine->incoming_events.enqueue({TextureLoad, {
         requesting_layer,
         filename,
         ptr,
     }});
 }
 
-void Window::process_events() {
+void Window::process_events(Window *win, std::atomic<bool> *run_flag, bool single_pass) {
     // This is where the window acts on the events sent from the engine
-    std::optional<Event> event;
+    Event event;
 
-    while ((event = Window::engine->pop_outgoing_event()).has_value()) {
-        switch (event->type) {
+    while (!single_pass || !Window::engine->outgoing_events.empty()) {
+        event = Window::engine->outgoing_events.dequeue();
+
+        switch (event.type) {
         case WindowResizeRequest:
-            this->resize_window(INT(*event, 0), INT(*event, 1));
+            win->resize_window(INT(0), INT(1));
             break;
         case LayerUpdateRequest:
-            for (Shader *shader : this->shaders) {
-                shader->update();
-            }
+            win->mt_queue.enqueue({MTUpdateLayers, {}});
             break;
         case LayerModifyRequest:
-            PLOGD << "Got layer modify request";
-            if (INT(*event, 0) == EVENT_LAYER_ADD) {
-                this->add_layer(LAYER(*event, 1), SHADER(*event, 2));
+            if (INT(0) == EVENT_LAYER_ADD) {
+                PLOGD << "Got layer add request";
+                win->add_layer(LAYER(1), SHADER(2));
+            } else if (INT(0) == EVENT_LAYER_ADD_BLANK) {
+                PLOGD << "Got blank layer add request";
+                win->add_layer(LAYER(1), nullptr);
             }
             break;
         case MeshLoadRequest:
             PLOGD << "Got mesh load request";
-            this->process_mesh_load_request(LAYER(*event, 0), STRING(*event, 1));
+            win->process_mesh_load_request(LAYER(0), STRING(1));
             break;
         case TextureLoadRequest:
             PLOGD << "Got texture load request";
-            this->process_texture_load_request(LAYER(*event, 0), STRING(*event, 1));
+            win->process_texture_load_request(LAYER(0), STRING(1));
+            break;
+        case CameraUpdateRequest:
+            break;
+        case Break:
+            PLOGI << "Got Break event. Exiting";
+            return;
+        default:
+            PLOGW << "Got unknown event type";
+            break;
+        }
+    }
+}
+
+void Window::process_mt_events() {
+    Event event;
+
+    // This is run from the main thread (MT), thus it can't block while waiting for more
+    // events to be added to the queue
+    while (!this->mt_queue.empty()) {
+        event = this->mt_queue.dequeue();
+
+        switch (event.type) {
+        case MTBindTexture:
+            this->process_mt_bind_texture(LAYER(0), STRING(1), SURFACE(2));
+            break;
+        case MTNotifyMeshLoad:
+            LAYER(0)->receive_resource(Mesh, STRING(1), VOID(2));
+            break;
+        case MTUpdateLayers:
+            for (Shader *shader : this->shaders) {
+                shader->update();
+            }
             break;
         default:
-            PLOGE << "Got unknown event type";
             break;
         }
     }
@@ -253,6 +372,9 @@ void Window::main_loop() {
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
+    std::thread window_event_thread(Window::process_events, this, &run, false);
+    std::thread engine_event_thread(Engine::process_events, Window::engine, &run, false);
 
     auto start = std::chrono::high_resolution_clock::now();
     auto stop = std::chrono::high_resolution_clock::now();
@@ -264,13 +386,9 @@ void Window::main_loop() {
         // Start the timer where we left off
         start = stop;
 
-        // Process our events, and tell the engine to process its events
-        Window::engine->process_events();
-        this->process_events();
-
-
-        // Any resource requests will be handled during the next iteration
         Window::engine->process_resource_requests();
+
+        this->process_mt_events();
 
         // Draw frame and time the draw call
         this->draw();
@@ -325,6 +443,14 @@ void Window::main_loop() {
         ++total_frame_count;
     }
 
+    run = false;
+
+    Window::engine->outgoing_events.enqueue({Break, {}});
+    Window::engine->incoming_events.enqueue({Break, {}});
+
+    window_event_thread.join();
+    engine_event_thread.join();
+
     for (Shader *shader : this->shaders) {
         // Begin tearing down GL resources
         shader->teardown();
@@ -340,19 +466,30 @@ void Window::add_layer(Layer *layer, Shader *shader) {
     // this makes rendering by shader easier, and
     // minimizes program switching.
 
-    shader->add_layer(layer);
+    if (shader != nullptr) {
+        shader->add_layer(layer);
 
-    // TODO: Can probably make this into an unordered_set or something faster
-    if (std::find(this->shaders.begin(), this->shaders.end(), shader) == this->shaders.end()) {
-        this->shaders.push_back(shader);
+        // TODO: Can probably make this into an unordered_set or something faster
+        if (std::find(this->shaders.begin(), this->shaders.end(), shader) == this->shaders.end()) {
+            this->shaders.push_back(shader);
+        }
     }
 
     auto attributes = layer->get_attributes();
 
     for (auto attr = attributes.begin(); attr != attributes.end(); ++attr) {
-        std::optional<EventType> event_type;
-        while ((event_type = (*attr)->pop_subscription_request()).has_value()) {
-            Window::attribute_event_subscribers[*event_type].push_back(*attr);
-        }
+        this->add_attribute(*attr);
+        // std::optional<EventType> event_type;
+        // while ((event_type = (*attr)->pop_subscription_request()).has_value()) {
+        //     Window::attribute_event_subscribers[*event_type].push_back(*attr);
+        // }
+    }
+}
+
+void Window::add_attribute(std::shared_ptr<Attribute> attr) {
+    std::optional<EventType> event_type;
+
+    while ((event_type = attr->pop_subscription_request()).has_value()) {
+        Window::attribute_event_subscribers[*event_type].push_back(attr);
     }
 }

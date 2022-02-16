@@ -13,7 +13,7 @@
 #include "engine.h"
 #include "mesh.h"
 #include "layer.h"
-#include "mesh.h"
+#include "safe_queue.h"
 #include "shader.h"
 
 using std::string;
@@ -33,7 +33,7 @@ class Window {
         std::chrono::duration<float, std::milli> single_frame_duration;
         std::chrono::duration<float, std::milli> current_frame_duration;
 
-        void process_events();
+        static void process_events(Window *window, std::atomic<bool> *run_flag, bool single_pass);
         void draw();
 
         static Engine *engine;
@@ -48,6 +48,9 @@ class Window {
         mesh_t* load_mesh(string filename);
         void process_mesh_load_request(Layer *requesting_layer, string filename);
         void process_texture_load_request(Layer *requesting_layer, string filename);
+
+        void process_mt_events();
+        void process_mt_bind_texture(Layer *requesting_layer, string filename, SDL_Surface *texture);
     public:
         Window(string window_title, int initial_width, int initial_height);
         ~Window();
@@ -55,8 +58,13 @@ class Window {
         bool startup();
         void main_loop();
         void add_layer(Layer *layer, Shader *shader);
+        void add_attribute(std::shared_ptr<Attribute> attr);
         void attach(Engine *engine);
 
         static int width;
         static int height;
+
+        static glm::mat4 view; // TODO: Do this a better way
+
+        SafeQueue<Event> mt_queue;
 };

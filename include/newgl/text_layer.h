@@ -21,34 +21,36 @@ class TextLayer : public Layer {
     private:
         // VBOs and IBOs
         GLuint vbo_vertices = 0;
-        GLuint vbo_colors = 0;
         GLuint vbo_uvs = 0;
+        GLuint vbo_colors = 0;
         GLuint ibo_faces = 0;
 
-        // Atlas
+        // Buffers
+        float *vertices = nullptr;
+        float *uvs = nullptr;
+        float *colors = nullptr;
+        GLushort *faces = nullptr;
+
+        // Textures
         GLuint atlas_texture_id = 0;
+
+        // Locations
+        GLuint texture_location = 0;
+        GLuint model_location = 0;
+        GLint vertex_location = 0;
+        GLint uv_location = 0;
+        GLint color_location = 0;
+
+        // Atlas
         unsigned int atlas_width = 0;
         unsigned int atlas_height = 0;
 
-        // Layer positioning
-        float x = 0.0f;
-        float y = 0.0f;
-
-        float y_insert_pos_top = 1.0f;
         float y_insert_pos_bottom = 1.0f;
-        int vertical_char_offset = 0;
-        float scale = 0.5f;
         string text;
 
         unsigned int columns = 80;
         unsigned int rows = 24;
         unsigned int char_count = 80 * 24;
-        int start_line = 0;
-        int last_start_line = 0;
-        float *vertices = nullptr;
-        float *uvs = nullptr;
-        float *colors = nullptr;
-        GLushort *faces = nullptr;
 
         // Font
         std::string font_path;
@@ -65,7 +67,6 @@ class TextLayer : public Layer {
         void draw(glm::mat4 view, glm::mat4 projection, camera_t camera);
         void teardown();
         void set_text(string text);
-        void set_position(float x, float y);
         void calculate_dimensions();
         void allocate_attribute_buffers();
         void calculate_attribute_buffers(bool full_draw = false);

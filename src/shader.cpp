@@ -27,7 +27,7 @@ void Shader::setup() {
     this->compile();
 
     for (Layer *layer : this->layers) {
-        layer->shader_id = this->id;
+        layer->shader = this;
         layer->setup();
     }
 }
@@ -151,19 +151,30 @@ void Shader::add_layer(Layer *layer) {
     }
 }
 
-void Shader::draw_layers() {
-    struct camera_t camera = {
-        .position = glm::vec3(0.0, 2.0, 4.0),
-        .target   = glm::vec3(0.0, 0.0, 0.0),
-        .up       = glm::vec3(0.0, 1.0, 0.0),
-        .vfov     = 45.0
-    };
+GLuint Shader::get_uniform_location(string name) {
+    auto it = this->uniform_locations.find(name);
 
-    float ratio = 1.0f * Window::width / Window::height;
-    glm::mat4 view = glm::lookAt(camera.position, camera.target, camera.up);
-    glm::mat4 projection = glm::perspective(camera.vfov, ratio, 0.1f, 100.0f);
-
-    for (Layer *layer : this->layers) {
-        layer->draw(view, projection, camera);
+    if (it != this->uniform_locations.end()) {
+        return it->second;
     }
+
+    GLuint loc = glGetUniformLocation(this->id, name.c_str());
+
+    this->uniform_locations[name] = loc;
+
+    return loc;
+}
+
+GLint Shader::get_attrib_location(string name) {
+    auto it = this->attrib_locations.find(name);
+
+    if (it != this->attrib_locations.end()) {
+        return it->second;
+    }
+
+    GLint loc = glGetAttribLocation(this->id, name.c_str());
+
+    this->attrib_locations[name] = loc;
+
+    return loc;
 }

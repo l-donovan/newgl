@@ -23,7 +23,7 @@ void CaptureFramerate::handle_framerate(float fps, float percent) {
 void CaptureFramerate::receive_event(Event event) {
     switch (event.type) {
     case Framerate:
-        this->handle_framerate(FLOAT(event, 0), FLOAT(event, 1));
+        this->handle_framerate(FLOAT(0), FLOAT(1));
         break;
     default:
         break;

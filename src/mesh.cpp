@@ -158,7 +158,7 @@ bool load_obj(const char *filename, mesh_t *mesh) {
 
             ruvs.push_back(uv);
         } else {
-            //std::cout << "Unknown line: \"" << line << "\"" << std::endl;
+            //PLOGW << "Unknown line: \"" << line << "\"";
         }
     }
 

@@ -47,7 +47,6 @@ using std::string;
 std::map<GLchar, Glyph> glyphs;
 
 TextLayer::TextLayer() {
-    this->attributes.push_back(std::make_shared<CaptureFramerate>(this));
 }
 
 void TextLayer::setup() {
@@ -55,6 +54,13 @@ void TextLayer::setup() {
     glGenBuffers(1, &this->vbo_uvs);
     glGenBuffers(1, &this->vbo_colors);
     glGenBuffers(1, &this->ibo_faces);
+
+    this->model_location = this->shader->get_uniform_location("model");
+    this->texture_location = this->shader->get_uniform_location("atlas");
+
+    this->vertex_location = this->shader->get_attrib_location("vertex");
+    this->uv_location = this->shader->get_attrib_location("tex_coord");
+    this->color_location = this->shader->get_attrib_location("color");
 
     this->calculate_dimensions();
     this->allocate_attribute_buffers();
@@ -160,7 +166,7 @@ bool TextLayer::rasterize_font() {
 
     atlas_height += this->font_height;
 
-    PLOGI << "Atlas width: " << atlas_width << "px, height: " << atlas_height << "px";
+    PLOGD << "Atlas width: " << atlas_width << "px, height: " << atlas_height << "px";
 
     // Create atlas
     glGenTextures(1, &this->atlas_texture_id);
@@ -217,11 +223,6 @@ bool TextLayer::rasterize_font() {
         glyphs[key].uv_start = glm::vec2(uv_x1, uv_y1);
         glyphs[key].uv_stop = glm::vec2(uv_x2, uv_y2);
 
-        PLOGD
-            << "Character #" << static_cast<unsigned int>(key)
-            << ": UV1 (" << uv_x1 << ", " << uv_y1 << ")"
-            << ", UV2 (" << uv_x2 << ", " << uv_y2 << ")";
-
         // We don't need the bitmap data anymore now that it's in a texture atlas
         free(glyph.data);
 
@@ -251,16 +252,6 @@ void TextLayer::set_text(string text) {
     this->text = text;
     //this->char_count = text.length();
     this->calculate_attribute_buffers();
-
-    PLOGD
-        << "C: " << this->text.size()
-        << ", V: " << 4 * this->text.size()
-        << ", F: " << 2 * this->text.size();
-}
-
-void TextLayer::set_position(float x, float y) {
-    this->x = x * Window::width;
-    this->y = (1.0f - y) * Window::height;
 }
 
 void TextLayer::calculate_dimensions() {
@@ -325,10 +316,7 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
     // Set up all the VBOs
 
     this->y_insert_pos_bottom = 1.0f;
-    this->vertical_char_offset = 0;
     this->replace_line_idx = 0;
-    this->start_line = this->rows - 1;
-    this->last_start_line = this->rows - 1;
 
     char c;
 
@@ -396,12 +384,10 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
             }
         }
 
-        //this->vertical_char_offset++;
         this->y_insert_pos_bottom -= font_height;
         this->replace_line_idx++;
         this->replace_line_idx %= this->rows;
     }
-
 
     // Populate buffers
 
@@ -439,43 +425,33 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
 }
 
 void TextLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
-    float to_screen_height = 2.0f / Window::height;
-    float font_height = this->font_height * to_screen_height;
-    glm::vec3 translation(
-        0.0f,
-        /*font_height * (this->vertical_char_offset - this->rows),*/ 0.0,
-        0.0f
-    );
+    glm::vec3 translation(0.0f, 0.0f, 0.0f);
+
     glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
 
-    GLuint model_location = glGetUniformLocation(this->shader_id, "model");
-    glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(this->model_location, 1, GL_FALSE, glm::value_ptr(model));
 
-    GLuint texture_location = glGetUniformLocation(this->shader_id, "atlas");
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->atlas_texture_id);
-    glUniform1i(texture_location, 0);
+    glUniform1i(this->texture_location, 0);
 
-    GLint vertex_position = glGetAttribLocation(this->shader_id, "vertex");
-    glEnableVertexAttribArray(vertex_position);
+    glEnableVertexAttribArray(this->vertex_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-    glVertexAttribPointer(vertex_position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(this->vertex_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    GLint uv_position = glGetAttribLocation(this->shader_id, "tex_coord");
-    glEnableVertexAttribArray(uv_position);
+    glEnableVertexAttribArray(this->uv_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_uvs);
-    glVertexAttribPointer(uv_position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(this->uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    GLint color_position = glGetAttribLocation(this->shader_id, "color");
-    glEnableVertexAttribArray(color_position);
+    glEnableVertexAttribArray(this->color_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_colors);
-    glVertexAttribPointer(color_position, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(this->color_location, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
     glDrawElements(GL_TRIANGLES, 6 * this->text.length(), GL_UNSIGNED_SHORT, 0); // TODO: YUCK
 
-    glDisableVertexAttribArray(vertex_position);
-    glDisableVertexAttribArray(uv_position);
-    glDisableVertexAttribArray(color_position);
+    glDisableVertexAttribArray(this->vertex_location);
+    glDisableVertexAttribArray(this->uv_location);
+    glDisableVertexAttribArray(this->color_location);
 
 }

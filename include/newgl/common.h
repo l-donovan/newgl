@@ -6,14 +6,15 @@
 
 using std::string;
 
-#define INT(E, X)    std::get<int>((E).data[X])
-#define FLOAT(E, X)  std::get<float>((E).data[X])
-#define DOUBLE(E, X) std::get<double>((E).data[X])
-#define LONG(E, X)   std::get<long>((E).data[X])
-#define LAYER(E, X)  std::get<Layer*>((E).data[X])
-#define SHADER(E, X) std::get<Shader*>((E).data[X])
-#define STRING(E, X) std::get<string>((E).data[X])
-#define VOID(E, X)   std::get<void*>((E).data[X])
+#define INT(X)     std::get<int>(event.data[X])
+#define FLOAT(X)   std::get<float>(event.data[X])
+#define DOUBLE(X)  std::get<double>(event.data[X])
+#define LONG(X)    std::get<long>(event.data[X])
+#define STRING(X)  std::get<string>(event.data[X])
+#define LAYER(X)   std::get<Layer*>(event.data[X])
+#define SHADER(X)  std::get<Shader*>(event.data[X])
+#define VOID(X)    std::get<void*>(event.data[X])
+#define SURFACE(X) std::get<SDL_Surface*>(event.data[X])
 
 struct camera_t {
     glm::vec3 position;
@@ -36,11 +37,23 @@ enum EventType {
     LayerModifyRequest,
     MeshLoadRequest,
     TextureLoadRequest,
+    CameraUpdateRequest,
+    AttributeModifyRequest,
 
     // Right now, ticks are just frames, but who's counting?
     Tick1,
     Tick10,
     Tick100,
+
+    BeginDraw,
+    EndDraw,
+
+    MTBindTexture,
+    MTNotifyMeshLoad,
+    MTUpdateLayers,
+
+    // Control events
+    Break,
 };
 
 enum ResourceType {

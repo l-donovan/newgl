@@ -10,10 +10,7 @@
 #include "layer.h"
 #include "mesh.h"
 
-#include <iostream>
-#include <queue>
 #include <string>
-#include <vector>
 
 using std::string;
 
@@ -21,14 +18,17 @@ class EntityLayer : public Layer {
     private:
         // VBOs and IBOs
         GLuint vbo_vertices = 0;
-        GLuint vbo_normals = 0;
         GLuint vbo_uvs = 0;
+        GLuint vbo_normals = 0;
         GLuint ibo_faces = 0;
 
         // Layer positioning
         float x = 0.0f;
         float y = 0.0f;
         float z = 0.0f;
+        float sx = 1.0f;
+        float sy = 1.0f;
+        float sz = 1.0f;
 
         // Buffers
         float *vertices = nullptr;
@@ -39,22 +39,20 @@ class EntityLayer : public Layer {
         // Textures
         GLuint texture_0 = 0;
 
-        GLuint vert_count = 0;
-        GLuint uv_count = 0;
-        GLuint normal_count = 0;
-        GLuint tri_count = 0;
-
+        // Locations
         GLuint model_location = 0;
         GLuint view_location = 0;
         GLuint projection_location = 0;
         GLuint camera_location = 0;
         GLuint texture_location = 0;
-
         GLint vertex_location = 0;
         GLint uv_location = 0;
         GLint normal_location = 0;
 
-        string mesh_filename;
+        GLuint vert_count = 0;
+        GLuint uv_count = 0;
+        GLuint normal_count = 0;
+        GLuint tri_count = 0;
     public:
         EntityLayer();
 
@@ -66,6 +64,7 @@ class EntityLayer : public Layer {
         void load_mesh(string mesh_filename);
         void receive_mesh(mesh_t *mesh);
         void set_position(float x, float y, float z);
+        void set_scale(float x, float y = 0.0f, float z = 0.0f);
         void calculate_attribute_buffers();
 
         void receive_resource(ResourceType type, string name, void *data);

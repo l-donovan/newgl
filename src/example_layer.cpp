@@ -48,12 +48,12 @@ void ExampleLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     //int uniform_location = glGetUniformLocation(this->shader_id, "myThing");
     //glUniform3f(uniform_location, 1.0f, green_val, 0.0f);
 
-    GLint vertex_position = glGetAttribLocation(this->shader_id, "vertex");
+    GLint vertex_position = this->shader->get_attrib_location("vertex");
     glEnableVertexAttribArray(vertex_position);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
     glVertexAttribPointer(vertex_position, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    GLint color_position = glGetAttribLocation(this->shader_id, "color");
+    GLint color_position = this->shader->get_attrib_location("color");
     glEnableVertexAttribArray(color_position);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_colors);
     glVertexAttribPointer(color_position, 3, GL_FLOAT, GL_FALSE, 0, 0);
