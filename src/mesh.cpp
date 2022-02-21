@@ -56,11 +56,7 @@ Mesh Mesh::from_obj(string filename) {
 
     std::map<GLushort, vector<GLushort>> vertex_normals;
 
-    PLOGI << "A.1";
-
     Mesh mesh;
-
-    PLOGI << "A.2";
 
     if (!in_file) {
         PLOGE << "Error: can't open " << filename;
@@ -170,8 +166,6 @@ Mesh Mesh::from_obj(string filename) {
 
     in_file.close();
 
-    PLOGI << "A.3";
-
     for (auto it = vertex_normals.begin(); it != vertex_normals.end(); ++it) {
         glm::vec3 final_normal(0.0);
         break;
@@ -187,52 +181,40 @@ Mesh Mesh::from_obj(string filename) {
     rnormals.resize(rvertices.size(), glm::vec3(0.0));
     vec_count.resize(rvertices.size(), 0);
 
-    PLOGI << "B";
-
     vector<glm::vec4> vertices;
     vector<glm::vec2> uvs;
     vector<glm::vec3> normals;
     vector<GLushort> faces;
 
-    PLOGI << "B.2";
-
     for (face_t face : rfaces) {
-        PLOGD << "C.1";
         vertices.push_back(rvertices[face.v0 - 1]);
         vertices.push_back(rvertices[face.v1 - 1]);
         vertices.push_back(rvertices[face.v2 - 1]);
 
-        PLOGD << "C.2";
         faces.push_back(vertices.size() - 3);
         faces.push_back(vertices.size() - 2);
         faces.push_back(vertices.size() - 1);
 
-        PLOGD << "C.3";
         if (face.uv0 > 0)
             uvs.push_back(ruvs[face.uv0 - 1]);
         else
             uvs.push_back(glm::vec2(0.0, 1.0));
 
-        PLOGD << "C.4";
         if (face.uv1 > 0)
             uvs.push_back(ruvs[face.uv1 - 1]);
         else
             uvs.push_back(glm::vec2(1.0, 0.0));
 
-        PLOGD << "C.5";
         if (face.uv2 > 0)
             uvs.push_back(ruvs[face.uv2 - 1]);
         else
             uvs.push_back(glm::vec2(1.0, 1.0));
 
-        PLOGD << "C.6";
         if (preset_normals) {
-            PLOGD << "C.6a";
             normals.push_back(rnormals[face.v0 - 1]);
             normals.push_back(rnormals[face.v1 - 1]);
             normals.push_back(rnormals[face.v2 - 1]);
         } else {
-            PLOGD << "C.6b";
             glm::vec3 normal = glm::normalize(
                 glm::cross(
                     glm::vec3(rvertices[face.v1 - 1]) - glm::vec3(rvertices[face.v0 - 1]),
@@ -240,7 +222,6 @@ Mesh Mesh::from_obj(string filename) {
                 )
             );
 
-            PLOGD << "C.6c";
             normals.push_back(normal);
             normals.push_back(normal);
             normals.push_back(normal);
@@ -266,8 +247,6 @@ Mesh Mesh::from_obj(string filename) {
             }
         }
     }
-
-    PLOGD << "We are here";
 
     mesh.vertices = vertices;
     mesh.uvs = uvs;

@@ -15,6 +15,7 @@ using std::string;
 #define SHADER(X)  std::get<Shader*>(event.data[X])
 #define VOID(X)    std::get<void*>(event.data[X])
 #define SURFACE(X) std::get<SDL_Surface*>(event.data[X])
+#define MESH(X)    std::get<Mesh*>(event.data[X])
 
 struct camera_t {
     glm::vec3 position;

@@ -269,29 +269,41 @@ void TextLayer::calculate_dimensions() {
 }
 
 void TextLayer::allocate_attribute_buffers() {
-    this->vertices = (float*) realloc(this->vertices, 2 * sizeof(float) * 4 * this->char_count);
-    if (this->vertices == nullptr) {
-        PLOGF << "Failed to allocate memory for vertices";
+    float* new_vertices = (float*) realloc(this->vertices, 2 * sizeof(float) * 4 * this->char_count);
+
+    if (new_vertices == nullptr) {
+        PLOGE << "Failed to allocate memory for vertices";
         return;
     }
 
-    this->uvs = (float*) realloc(this->uvs, 2 * sizeof(float) * 4 * this->char_count);
-    if (this->uvs == nullptr) {
-        PLOGF << "Failed to allocate memory for UVs";
+    this->vertices = new_vertices;
+
+    float *new_uvs = (float*) realloc(this->uvs, 2 * sizeof(float) * 4 * this->char_count);
+
+    if (new_uvs == nullptr) {
+        PLOGE << "Failed to allocate memory for UVs";
         return;
     }
 
-    this->colors = (float*) realloc(this->colors, 4 * sizeof(float) * 4 * this->char_count);
-    if (this->colors == nullptr) {
-        PLOGF << "Failed to allocate memory for colors";
+    this->uvs = new_uvs;
+
+    float *new_colors = (float*) realloc(this->colors, 4 * sizeof(float) * 4 * this->char_count);
+
+    if (new_colors == nullptr) {
+        PLOGE << "Failed to allocate memory for colors";
         return;
     }
 
-    this->faces = (GLushort*) realloc(this->faces, sizeof(GLushort) * 6 * this->char_count);
-    if (this->faces == nullptr) {
-        PLOGF << "Failed to allocate memory for faces";
+    this->colors = new_colors;
+
+    GLushort* new_faces = (GLushort*)realloc(this->faces, sizeof(GLushort) * 6 * this->char_count);
+
+    if (new_faces == nullptr) {
+        PLOGE << "Failed to allocate memory for faces";
         return;
     }
+
+    this->faces = new_faces;
 
     for (unsigned int i = 0; i < this->char_count; ++i) {
         // Face 1

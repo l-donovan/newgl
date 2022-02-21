@@ -16,7 +16,6 @@ SDL_Surface* load_texture(const char* filename) {
     }
 
     return res_texture;
-
 }
 
 GLuint bind_texture(SDL_Surface *res_texture) {
@@ -28,16 +27,15 @@ GLuint bind_texture(SDL_Surface *res_texture) {
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
-        GL_RGBA8, // TODO hardcoded
+        GL_RGB,
         res_texture->w,
         res_texture->h,
         0,
-        GL_BGRA, // TODO hardcoded
-        GL_UNSIGNED_INT_8_8_8_8_REV,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
         res_texture->pixels);
-    SDL_FreeSurface(res_texture);
 
-    PLOGD << "Bound texture";
+    SDL_FreeSurface(res_texture);
 
     return texture_id;
 }

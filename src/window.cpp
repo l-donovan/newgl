@@ -244,7 +244,6 @@ void Window::resize_window(int width, int height) {
 }
 
 Mesh* Window::load_mesh(string filename) {
-    PLOGI << "load_mesh START";
     auto it = this->meshes.find(filename);
 
     if (it != meshes.end()) {
@@ -254,7 +253,6 @@ Mesh* Window::load_mesh(string filename) {
 
     Mesh mesh = Mesh::from_obj(filename);
     this->meshes[filename] = mesh;
-    PLOGI << "load_mesh AFTER from_obj";
 
     return &this->meshes[filename];
 }
@@ -279,6 +277,12 @@ void Window::process_mt_bind_texture(Layer *requesting_layer, string filename, S
     GLuint texture_id = bind_texture(texture);
 
     void *ptr = malloc(sizeof(GLuint));
+
+    if (ptr == nullptr) {
+        PLOGE << "Failed to allocate GLuint pointer. Can't beind texture!";
+        return;
+    }
+
     *((int*)ptr) = texture_id;
 
     Window::engine->incoming_events.enqueue({TextureLoad, {
@@ -344,7 +348,7 @@ void Window::process_mt_events() {
             this->process_mt_bind_texture(LAYER(0), STRING(1), SURFACE(2));
             break;
         case MTNotifyMeshLoad:
-            LAYER(0)->receive_resource(MeshResource, STRING(1), VOID(2));
+            LAYER(0)->receive_resource(MeshResource, STRING(1), (void*) MESH(2));
             break;
         case MTUpdateLayers:
             for (Shader *shader : this->shaders) {
