@@ -44,12 +44,12 @@ Engine::Engine() {
     framerate_layer.add_attribute(std::make_shared<CaptureFramerate>(&framerate_layer));
 
     suzanne.request_resource(Texture, ROOT_DIR + "/resources/images/chinese_garden.png");
-    suzanne.request_resource(Mesh, ROOT_DIR + "/resources/models/suzanne.obj");
+    suzanne.request_resource(MeshResource, ROOT_DIR + "/resources/models/suzanne.obj");
     suzanne.add_attribute(std::make_shared<BasicMotion>(&suzanne));
     suzanne.add_attribute(std::make_shared<ToggleWireframe>(&suzanne));
 
     cactus.request_resource(Texture, ROOT_DIR + "/resources/images/cactus.png");
-    cactus.request_resource(Mesh, ROOT_DIR + "/resources/models/cactus.obj");
+    cactus.request_resource(MeshResource, ROOT_DIR + "/resources/models/cactus.obj");
     cactus.add_attribute(std::make_shared<ToggleWireframe>(&cactus));
     cactus.set_scale(4.0f);
 
@@ -118,7 +118,7 @@ void Engine::process_resource_requests() {
     for (auto layer : {(Layer*) &suzanne, (Layer*) &cactus, (Layer*) &framerate_layer, (Layer*) &skybox}) { // TODO: This is awful
         while ((request = layer->pop_resource_request()).has_value()) {
             switch (request->type) {
-            case Mesh:
+            case MeshResource:
                 this->outgoing_events.enqueue({MeshLoadRequest, {layer, request->name}});
                 break;
             case Texture:
@@ -152,7 +152,7 @@ void Engine::process_events(Engine *engine, std::atomic<bool> *run_flag, bool si
             engine->handle_key_event(INT(0), INT(1), INT(2), INT(3));
             break;
         case MeshLoad:
-            LAYER(0)->receive_resource(Mesh, STRING(1), VOID(2));
+            LAYER(0)->receive_resource(MeshResource, STRING(1), VOID(2));
             break;
         case TextureLoad:
             LAYER(0)->receive_resource(Texture, STRING(1), VOID(2));

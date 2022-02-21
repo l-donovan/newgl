@@ -2,6 +2,7 @@
 
 // Forward declarations
 class Attribute;
+class Mesh;
 class Shader;
 class Layer;
 
@@ -27,7 +28,7 @@ class Layer;
 
 using variant_t = std::variant<
     int, float, double, long, std::string,
-    Layer*, Shader*, void*, SDL_Surface*>;
+    Layer*, Shader*, void*, SDL_Surface*, Mesh*>;
 
 struct Event {
     enum EventType type;

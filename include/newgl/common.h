@@ -57,7 +57,7 @@ enum EventType {
 };
 
 enum ResourceType {
-    Mesh,
+    MeshResource,
     Texture,
 };
 

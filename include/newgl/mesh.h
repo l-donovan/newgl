@@ -6,16 +6,20 @@
 
 #include <glm/glm.hpp>
 
+#include <string>
 #include <vector>
 
+using std::string;
 using std::vector;
 
-struct mesh_t {
-    vector<glm::vec4> *vertices;
-    vector<glm::vec2> *uvs;
-    vector<glm::vec3> *normals;
-    vector<GLushort> *faces;
-};
+class Mesh {
+    public:
+        Mesh() {};
 
-bool load_obj(const char *filename, mesh_t *mesh);
-struct attributes* generate_attributes(GLfloat **coord_3d, GLfloat **v_color, GLfloat **coord_uv);
+        vector<glm::vec4> vertices;
+        vector<glm::vec2> uvs;
+        vector<glm::vec3> normals;
+        vector<GLushort> faces;
+
+        static Mesh from_obj(string filename);
+};

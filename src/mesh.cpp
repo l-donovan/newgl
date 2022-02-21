@@ -38,9 +38,9 @@ void trim(std::string &s) {
     }).base(), s.end());
 }
 
-bool load_obj(const char *filename, mesh_t *mesh) {
-    std::ifstream in_file(filename);
-    std::string line;
+Mesh Mesh::from_obj(string filename) {
+    std::ifstream in_file;
+    in_file.open(filename);
 
     vector<glm::vec4> rvertices;
     vector<glm::vec2> ruvs;
@@ -56,12 +56,18 @@ bool load_obj(const char *filename, mesh_t *mesh) {
 
     std::map<GLushort, vector<GLushort>> vertex_normals;
 
+    PLOGI << "A.1";
+
+    Mesh mesh;
+
+    PLOGI << "A.2";
+
     if (!in_file) {
         PLOGE << "Error: can't open " << filename;
-        return false;
+        return {};
     }
 
-    while (getline(in_file, line)) {
+    for (std::string line; std::getline(in_file, line);) {
         trim(line);
 
         if (line.empty() || line[0] == '#')
@@ -162,6 +168,10 @@ bool load_obj(const char *filename, mesh_t *mesh) {
         }
     }
 
+    in_file.close();
+
+    PLOGI << "A.3";
+
     for (auto it = vertex_normals.begin(); it != vertex_normals.end(); ++it) {
         glm::vec3 final_normal(0.0);
         break;
@@ -177,35 +187,52 @@ bool load_obj(const char *filename, mesh_t *mesh) {
     rnormals.resize(rvertices.size(), glm::vec3(0.0));
     vec_count.resize(rvertices.size(), 0);
 
+    PLOGI << "B";
+
+    vector<glm::vec4> vertices;
+    vector<glm::vec2> uvs;
+    vector<glm::vec3> normals;
+    vector<GLushort> faces;
+
+    PLOGI << "B.2";
+
     for (face_t face : rfaces) {
-        mesh->vertices->push_back(rvertices[face.v0 - 1]);
-        mesh->vertices->push_back(rvertices[face.v1 - 1]);
-        mesh->vertices->push_back(rvertices[face.v2 - 1]);
+        PLOGD << "C.1";
+        vertices.push_back(rvertices[face.v0 - 1]);
+        vertices.push_back(rvertices[face.v1 - 1]);
+        vertices.push_back(rvertices[face.v2 - 1]);
 
-        mesh->faces->push_back(mesh->vertices->size() - 3);
-        mesh->faces->push_back(mesh->vertices->size() - 2);
-        mesh->faces->push_back(mesh->vertices->size() - 1);
+        PLOGD << "C.2";
+        faces.push_back(vertices.size() - 3);
+        faces.push_back(vertices.size() - 2);
+        faces.push_back(vertices.size() - 1);
 
+        PLOGD << "C.3";
         if (face.uv0 > 0)
-            mesh->uvs->push_back(ruvs[face.uv0 - 1]);
+            uvs.push_back(ruvs[face.uv0 - 1]);
         else
-            mesh->uvs->push_back(glm::vec2(0.0, 1.0));
+            uvs.push_back(glm::vec2(0.0, 1.0));
 
+        PLOGD << "C.4";
         if (face.uv1 > 0)
-            mesh->uvs->push_back(ruvs[face.uv1 - 1]);
+            uvs.push_back(ruvs[face.uv1 - 1]);
         else
-            mesh->uvs->push_back(glm::vec2(1.0, 0.0));
+            uvs.push_back(glm::vec2(1.0, 0.0));
 
+        PLOGD << "C.5";
         if (face.uv2 > 0)
-            mesh->uvs->push_back(ruvs[face.uv2 - 1]);
+            uvs.push_back(ruvs[face.uv2 - 1]);
         else
-            mesh->uvs->push_back(glm::vec2(1.0, 1.0));
+            uvs.push_back(glm::vec2(1.0, 1.0));
 
+        PLOGD << "C.6";
         if (preset_normals) {
-            mesh->normals->push_back(rnormals[face.v0 - 1]);
-            mesh->normals->push_back(rnormals[face.v1 - 1]);
-            mesh->normals->push_back(rnormals[face.v2 - 1]);
+            PLOGD << "C.6a";
+            normals.push_back(rnormals[face.v0 - 1]);
+            normals.push_back(rnormals[face.v1 - 1]);
+            normals.push_back(rnormals[face.v2 - 1]);
         } else {
+            PLOGD << "C.6b";
             glm::vec3 normal = glm::normalize(
                 glm::cross(
                     glm::vec3(rvertices[face.v1 - 1]) - glm::vec3(rvertices[face.v0 - 1]),
@@ -213,9 +240,10 @@ bool load_obj(const char *filename, mesh_t *mesh) {
                 )
             );
 
-            mesh->normals->push_back(normal);
-            mesh->normals->push_back(normal);
-            mesh->normals->push_back(normal);
+            PLOGD << "C.6c";
+            normals.push_back(normal);
+            normals.push_back(normal);
+            normals.push_back(normal);
 
             continue; // TODO This is all temporary for meshes without preset normals
 
@@ -223,9 +251,9 @@ bool load_obj(const char *filename, mesh_t *mesh) {
                 vec_count[i]++;
 
                 if (vec_count[i] == 1) {
-                    mesh->normals->at(i) = normal;
+                    normals.at(i) = normal;
                 } else {
-                    auto old_normal = mesh->normals->at(i);
+                    auto old_normal = normals.at(i);
 
                     auto new_normal = glm::vec3(
                         old_normal.x * (1.0 - 1.0 / vec_count[i]) + normal.x / vec_count[i],
@@ -233,13 +261,20 @@ bool load_obj(const char *filename, mesh_t *mesh) {
                         old_normal.z * (1.0 - 1.0 / vec_count[i]) + normal.z / vec_count[i]
                     );
 
-                    mesh->normals->at(i) = glm::normalize(new_normal);
+                    normals.at(i) = glm::normalize(new_normal);
                 }
             }
         }
     }
 
-    PLOGD << "Loaded mesh " << filename << " (" << mesh->vertices->size() << "v, " << (mesh->faces->size() / 3) << "f)";
+    PLOGD << "We are here";
 
-    return true;
+    mesh.vertices = vertices;
+    mesh.uvs = uvs;
+    mesh.normals = normals;
+    mesh.faces = faces;
+
+    PLOGD << "Loaded mesh " << filename << " (" << vertices.size() << "v, " << (faces.size() / 3) << "f)";
+
+    return mesh;
 }

@@ -243,35 +243,24 @@ void Window::resize_window(int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-mesh_t* Window::load_mesh(string filename) {
+Mesh* Window::load_mesh(string filename) {
+    PLOGI << "load_mesh START";
     auto it = this->meshes.find(filename);
 
     if (it != meshes.end()) {
         PLOGD << "Loaded existing mesh " << filename;
-        return it->second;
+        return &it->second;
     }
 
-    struct mesh_t *mesh = (mesh_t*) malloc(sizeof *mesh);
-
-    mesh->vertices = (vector<glm::vec4>*) malloc(sizeof(vector<glm::vec4>));
-    mesh->uvs      = (vector<glm::vec2>*) malloc(sizeof(vector<glm::vec2>));
-    mesh->normals  = (vector<glm::vec3>*) malloc(sizeof(vector<glm::vec3>));
-    mesh->faces    = (vector<GLushort>*)  malloc(sizeof(vector<GLushort>));
-
-    *mesh->vertices = vector<glm::vec4>();
-    *mesh->uvs      = vector<glm::vec2>();
-    *mesh->normals  = vector<glm::vec3>();
-    *mesh->faces    = vector<GLushort>();
-
-    load_obj(filename.c_str(), mesh);
-
+    Mesh mesh = Mesh::from_obj(filename);
     this->meshes[filename] = mesh;
+    PLOGI << "load_mesh AFTER from_obj";
 
-    return mesh;
+    return &this->meshes[filename];
 }
 
 void Window::process_mesh_load_request(Layer *requesting_layer, string filename) {
-    mesh_t *mesh = this->load_mesh(filename);
+    Mesh *mesh = this->load_mesh(filename);
 
     Window::mt_queue.enqueue({MTNotifyMeshLoad, {
         requesting_layer,
@@ -355,7 +344,7 @@ void Window::process_mt_events() {
             this->process_mt_bind_texture(LAYER(0), STRING(1), SURFACE(2));
             break;
         case MTNotifyMeshLoad:
-            LAYER(0)->receive_resource(Mesh, STRING(1), VOID(2));
+            LAYER(0)->receive_resource(MeshResource, STRING(1), VOID(2));
             break;
         case MTUpdateLayers:
             for (Shader *shader : this->shaders) {

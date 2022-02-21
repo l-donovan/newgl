@@ -27,8 +27,7 @@ class Window {
         GLFWwindow *win;
         vector<Shader*> shaders;
 
-
-        std::map<std::string, mesh_t*> meshes;
+        std::map<std::string, Mesh> meshes;
 
         int fps_target = 60;
         std::chrono::duration<float, std::milli> single_frame_duration;
@@ -48,7 +47,7 @@ class Window {
         static void send_event(Event e);
 
         void resize_window(int width, int height);
-        mesh_t* load_mesh(string filename);
+        Mesh* load_mesh(string filename);
         void process_mesh_load_request(Layer *requesting_layer, string filename);
         void process_texture_load_request(Layer *requesting_layer, string filename);
 

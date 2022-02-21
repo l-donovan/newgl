@@ -133,9 +133,9 @@ bool TextLayer::rasterize_font() {
             };
         } else {
             // NOTE: Not sure this does anything
-            if (FT_Error err = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_LCD)) {
-                std::cerr << "Glyph rendering error: " << err << std::endl;
-            }
+            // if (FT_Error err = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_LCD)) {
+            //     PLOGW << "Glyph rendering error: " << err;
+            // }
 
             // The pitch is given in Bytes, thus bitmap_size is already in Bytes
             size_t bitmap_size = face->glyph->bitmap.rows * face->glyph->bitmap.pitch;

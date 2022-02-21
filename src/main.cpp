@@ -6,6 +6,9 @@
 Window window("newgl", 500, 500);
 Engine engine;
 
+// This prevents some linking issues in Windows
+#undef main
+
 int main(int argc, char **argv) {
     // Initialize our logger
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;

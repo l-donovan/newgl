@@ -62,7 +62,7 @@ class EntityLayer : public Layer {
         void teardown();
 
         void load_mesh(string mesh_filename);
-        void receive_mesh(mesh_t *mesh);
+        void receive_mesh(Mesh mesh);
         void set_position(float x, float y, float z);
         void set_scale(float x, float y = 0.0f, float z = 0.0f);
         void calculate_attribute_buffers();

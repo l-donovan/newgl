@@ -49,18 +49,18 @@ void EntityLayer::update() {
 }
 
 void EntityLayer::receive_resource(ResourceType type, string name, void *data) {
-    if (type == Mesh) {
-        mesh_t *mesh = (mesh_t*) data;
+    if (type == MeshResource) {
+        Mesh *mesh = (Mesh*) data;
 
-        this->vert_count = mesh->vertices->size();
-        this->uv_count = mesh->uvs->size();
-        this->normal_count = mesh->normals->size();
-        this->tri_count = mesh->faces->size();
+        this->vert_count = mesh->vertices.size();
+        this->uv_count = mesh->uvs.size();
+        this->normal_count = mesh->normals.size();
+        this->tri_count = mesh->faces.size();
 
-        this->vertices = &(*mesh->vertices)[0].x;
-        this->uvs = &(*mesh->uvs)[0].x;
-        this->normals = &(*mesh->normals)[0].x;
-        this->faces = &(*mesh->faces)[0];
+        this->vertices = &(mesh->vertices)[0].x;
+        this->uvs = &(mesh->uvs)[0].x;
+        this->normals = &(mesh->normals)[0].x;
+        this->faces = &(mesh->faces)[0];
 
         this->calculate_attribute_buffers();
     } else if (type == Texture) {
