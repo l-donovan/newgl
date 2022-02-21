@@ -95,13 +95,7 @@ void Engine::pre_window_startup() {
 
 // This must be called after the window has had its `startup` called
 void Engine::post_window_startup() {
-#ifdef _WIN32
-    framerate_layer.set_font("C:\\Windows\\Fonts\\Blex Mono Nerd Font Complete Mono Windows Compatible.ttf", 14);
-#elif __APPLE__
-    framerate_layer.set_font("/Users/ldonovan/Library/Fonts/Blex Mono Nerd Font Complete Mono-1.ttf", 14);
-#else
-    framerate_layer.set_font("/home/luke/.local/share/fonts/Blex Mono Nerd Font Complete Mono.ttf", 14);
-#endif
+    framerate_layer.set_font(ROOT_DIR + "/resources/fonts/Inconsolata.ttf", 18); // TODO: This should be handled as a resource
 }
 
 void Engine::handle_key_event(int key, int scancode, int action, int mods) {
