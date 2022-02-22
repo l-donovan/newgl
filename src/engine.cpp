@@ -65,6 +65,7 @@ Engine::Engine() {
     cactus.request_resource(MeshResource, ROOT_DIR + "/resources/models/cactus.obj");
     cactus.add_attribute(std::make_shared<ToggleWireframe>(&cactus));
     cactus.set_scale(4.0f);
+    cactus.set_position(-1.0f, 1.0f, 1.0f);
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     cactus_mat.set("metallic", 0.0f);
