@@ -1,10 +1,10 @@
 uniform sampler2D texture_0;
-vec3 mat_color = vec3(0.6, 0.5, 0.6);
-float mat_metallic = 1.0;
-float mat_roughness = 1.0;
-float mat_reflectance = 0.5;
-float mat_clear_coat = 0.1;
-float mat_clear_coat_roughness = 0.1;
+uniform vec3 mat_color;
+uniform float mat_metallic;
+uniform float mat_roughness;
+uniform float mat_reflectance;
+uniform float mat_clear_coat;
+uniform float mat_clear_coat_roughness;
 
 in vec2 v_uv;
 in vec3 v_norm;

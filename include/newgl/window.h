@@ -28,12 +28,13 @@ class Window {
         vector<Shader*> shaders;
 
         std::map<std::string, Mesh> meshes;
+        std::map<std::string, GLuint> textures;
 
         int fps_target = 60;
         std::chrono::duration<float, std::milli> single_frame_duration;
         std::chrono::duration<float, std::milli> current_frame_duration;
 
-        static void process_events(Window *window, std::atomic<bool> *run_flag, bool single_pass);
+        static void process_events(Window *window, bool single_pass);
         void draw();
 
         static Engine *engine;

@@ -33,7 +33,7 @@ void FirstPersonCamera::handle_cursor_position(double x, double y) {
     glm::mat4 view = this->construct_view(
         {0.0, 2.0, 4.0},
         (y - 0.5) * PI,
-        x * TAU);
+        (x - 0.5) * TAU);
 
     Window::view = view;
 }

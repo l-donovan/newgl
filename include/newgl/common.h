@@ -10,6 +10,7 @@ using std::string;
 #define FLOAT(X)   std::get<float>(event.data[X])
 #define DOUBLE(X)  std::get<double>(event.data[X])
 #define LONG(X)    std::get<long>(event.data[X])
+#define BOOL(X)    std::get<bool>(event.data[X])
 #define STRING(X)  std::get<string>(event.data[X])
 #define LAYER(X)   std::get<Layer*>(event.data[X])
 #define SHADER(X)  std::get<Shader*>(event.data[X])

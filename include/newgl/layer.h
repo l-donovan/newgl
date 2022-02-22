@@ -1,6 +1,7 @@
 #pragma once
 
 // Forward declarations
+class Material;
 class Shader;
 
 #include <glm/glm.hpp>
@@ -29,6 +30,7 @@ class Layer {
         bool draw_with_depth = true;
     public:
         Shader *shader;
+        Material *material = nullptr;
 
         virtual void setup() = 0;
         virtual void draw(glm::mat4 view, glm::mat4 projection, camera_t camera) = 0;

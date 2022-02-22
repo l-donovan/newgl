@@ -21,13 +21,12 @@
 #include "newgl/event.h"
 #include "newgl/image.h"
 #include "newgl/layer.h"
+#include "newgl/material.h"
 #include "newgl/mesh.h"
 #include "newgl/shader.h"
 #include "newgl/window.h"
 
 using std::string;
-
-std::atomic<bool> run{true};
 
 Engine* Window::engine = nullptr;
 Window::AttributeEventMap Window::attribute_event_subscribers = {};
@@ -102,7 +101,7 @@ bool Window::startup() {
     // Any GL/GLFW-specific events will absolutely break things, however, since
     // neither are initialized at this point.
 
-    Window::process_events(this, &run, true);
+    Window::process_events(this, true);
 
     glfwSetErrorCallback(glfw_error_callback);
 
@@ -186,8 +185,6 @@ void Window::draw() {
     //glm::mat4 view = glm::lookAt(camera.position, camera.target, camera.up);
     glm::mat4 projection = glm::perspective(camera.vfov, ratio, 0.1f, 100.0f);
 
-    glm::mat4 view = construct_view(camera.position, -0.3, 0.75 * 2.0 * 2.141592);
-
     // TODO: We should sort the draws by depth, or at least set aside a skybox to draw separately
 
     glDepthMask(GL_FALSE);
@@ -224,6 +221,9 @@ void Window::draw() {
                 }
 
                 Window::send_event({BeginDraw, {layer}});
+                if (layer->material != nullptr) {
+                    layer->material->apply(shader);
+                }
                 layer->draw(Window::view, projection, camera);
                 Window::send_event({EndDraw, {layer}});
             }
@@ -246,7 +246,7 @@ void Window::resize_window(int width, int height) {
 Mesh* Window::load_mesh(string filename) {
     auto it = this->meshes.find(filename);
 
-    if (it != meshes.end()) {
+    if (it != this->meshes.end()) {
         PLOGD << "Loaded existing mesh " << filename;
         return &it->second;
     }
@@ -268,9 +268,34 @@ void Window::process_mesh_load_request(Layer *requesting_layer, string filename)
 }
 
 void Window::process_texture_load_request(Layer *requesting_layer, string filename) {
-    SDL_Surface *texture = load_texture(filename.c_str());
+    auto it = this->textures.find(filename);
 
-    Window::mt_queue.enqueue({MTBindTexture, {requesting_layer, filename, texture}});
+    if (it != this->textures.end()) {
+        PLOGD << "Loaded existing texture " << filename;
+
+        void *ptr = malloc(sizeof(GLuint));
+
+        if (ptr == nullptr) {
+            PLOGE << "Failed to allocate GLuint pointer. Can't bind texture!";
+            return;
+        }
+
+        *((int*)ptr) = it->second;
+
+        Window::engine->incoming_events.enqueue({TextureLoad, {
+            requesting_layer,
+            filename,
+            ptr,
+        }});
+    } else {
+        SDL_Surface *texture = load_texture(filename.c_str());
+
+        Window::mt_queue.enqueue({MTBindTexture, {
+            requesting_layer,
+            filename,
+            texture,
+        }});
+    }
 }
 
 void Window::process_mt_bind_texture(Layer *requesting_layer, string filename, SDL_Surface *texture) {
@@ -279,11 +304,13 @@ void Window::process_mt_bind_texture(Layer *requesting_layer, string filename, S
     void *ptr = malloc(sizeof(GLuint));
 
     if (ptr == nullptr) {
-        PLOGE << "Failed to allocate GLuint pointer. Can't beind texture!";
+        PLOGE << "Failed to allocate GLuint pointer. Can't bind texture!";
         return;
     }
 
     *((int*)ptr) = texture_id;
+
+    this->textures[filename] = texture_id;
 
     Window::engine->incoming_events.enqueue({TextureLoad, {
         requesting_layer,
@@ -292,7 +319,7 @@ void Window::process_mt_bind_texture(Layer *requesting_layer, string filename, S
     }});
 }
 
-void Window::process_events(Window *win, std::atomic<bool> *run_flag, bool single_pass) {
+void Window::process_events(Window *win, bool single_pass) {
     // This is where the window acts on the events sent from the engine
     Event event;
 
@@ -366,8 +393,8 @@ void Window::main_loop() {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    std::thread window_event_thread(Window::process_events, this, &run, false);
-    std::thread engine_event_thread(Engine::process_events, Window::engine, &run, false);
+    std::thread window_event_thread(Window::process_events, this, false);
+    std::thread engine_event_thread(Engine::process_events, Window::engine, false);
 
     auto start = std::chrono::high_resolution_clock::now();
     auto stop = std::chrono::high_resolution_clock::now();
@@ -435,8 +462,6 @@ void Window::main_loop() {
 
         ++total_frame_count;
     }
-
-    run = false;
 
     Window::engine->outgoing_events.enqueue({Break, {}});
     Window::engine->incoming_events.enqueue({Break, {}});

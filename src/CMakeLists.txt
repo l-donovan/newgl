@@ -9,6 +9,7 @@ add_executable(newgl
     engine.cpp
     main.cpp
     shader.cpp
+    material.cpp
     window.cpp
     mesh.cpp
     image.cpp

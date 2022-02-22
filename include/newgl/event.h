@@ -27,7 +27,7 @@ class Layer;
 #define EVENT_ATTRIBUTE_REMOVE 6
 
 using variant_t = std::variant<
-    int, float, double, long, std::string,
+    int, float, double, long, bool, std::string,
     Layer*, Shader*, void*, SDL_Surface*, Mesh*>;
 
 struct Event {

@@ -3,7 +3,7 @@
 #include "newgl/window.h"
 
 // Create window and engine objects
-Window window("newgl", 500, 500);
+Window window("newgl", 1200, 800);
 Engine engine;
 
 // This prevents some linking issues in Windows

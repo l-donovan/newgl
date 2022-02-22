@@ -24,5 +24,5 @@ class Engine {
         void post_window_startup();
         void process_resource_requests();
 
-        static void process_events(Engine *engine, std::atomic<bool> *run_flag, bool single_pass);
+        static void process_events(Engine *engine, bool single_pass);
 };

@@ -2,6 +2,7 @@
 #include "newgl/common.h"
 #include "newgl/engine.h"
 #include "newgl/event.h"
+#include "newgl/material.h"
 #include "newgl/shader.h"
 #include "newgl/window.h"
 
@@ -40,6 +41,9 @@ TextLayer framerate_layer;
 SkyLayer skybox;
 ScriptLayer script_layer;
 
+Material suzanne_mat;
+Material cactus_mat;
+
 Engine::Engine() {
     framerate_layer.add_attribute(std::make_shared<CaptureFramerate>(&framerate_layer));
 
@@ -48,10 +52,28 @@ Engine::Engine() {
     suzanne.add_attribute(std::make_shared<BasicMotion>(&suzanne));
     suzanne.add_attribute(std::make_shared<ToggleWireframe>(&suzanne));
 
+    suzanne_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
+    suzanne_mat.set("metallic", 1.0f);
+    suzanne_mat.set("roughness", 1.0f);
+    suzanne_mat.set("reflectance", 0.5f);
+    suzanne_mat.set("clear_coat", 0.1f);
+    suzanne_mat.set("clear_coat_roughness", 0.1f);
+
+    suzanne.material = &suzanne_mat;
+
     cactus.request_resource(Texture, ROOT_DIR + "/resources/images/cactus.png");
     cactus.request_resource(MeshResource, ROOT_DIR + "/resources/models/cactus.obj");
     cactus.add_attribute(std::make_shared<ToggleWireframe>(&cactus));
     cactus.set_scale(4.0f);
+
+    cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
+    cactus_mat.set("metallic", 0.0f);
+    cactus_mat.set("roughness", 0.1f);
+    cactus_mat.set("reflectance", 0.5f);
+    cactus_mat.set("clear_coat", 0.1f);
+    cactus_mat.set("clear_coat_roughness", 0.1f);
+
+    cactus.material = &cactus_mat;
 
     skybox.request_resource(Texture, ROOT_DIR + "/resources/images/chinese_garden.png");
 
@@ -126,7 +148,7 @@ void Engine::process_resource_requests() {
     }
 }
 
-void Engine::process_events(Engine *engine, std::atomic<bool> *run_flag, bool single_pass) {
+void Engine::process_events(Engine *engine, bool single_pass) {
     // This is where the logic is actually handled
     // 1. Process incoming events from the window
     // 2. Send outgoing events to the window
