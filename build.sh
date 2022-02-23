@@ -20,7 +20,7 @@ fi
 mkdir -p $BUILD_DIR $DIST_DIR &&\
 cmake -B $BUILD_DIR -S . -DCMAKE_TOOLCHAIN_FILE=$VCPKG_DIR/scripts/buildsystems/vcpkg.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 &&\
 cmake --build $BUILD_DIR &&\
-cp $BUILD_DIR/src/newgl $DIST_DIR/newgl &&\
+cp $BUILD_DIR/demo/src/demo $DIST_DIR/demo &&\
 cp $BUILD_DIR/compile_commands.json . &&\
 RC=0
 
