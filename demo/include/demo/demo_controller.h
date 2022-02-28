@@ -12,5 +12,4 @@ class DemoController : public Controller {
         void process_resource_requests();
 
         void process_events(bool single_pass);
-        void handle_key_event(int key, int scancode, int action, int mods);
 };

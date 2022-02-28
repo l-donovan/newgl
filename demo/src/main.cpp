@@ -4,7 +4,7 @@
 #include "demo/demo_controller.h"
 
 // Create application and controller objects
-Application application("engine", 1200, 800);
+Application application("newGL", 1200, 800);
 DemoController controller;
 
 // This prevents some linking issues in Windows

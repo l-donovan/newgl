@@ -11,10 +11,11 @@
 #include "engine/sky_layer.h"
 #include "engine/text_layer.h"
 
-#include "engine/attributes/capture_framerate.h"
-#include "engine/attributes/first_person_camera.h"
-#include "engine/attributes/basic_motion.h"
-#include "engine/attributes/toggle_wireframe.h"
+#include "demo/attributes/capture_framerate.h"
+#include "demo/attributes/first_person_camera.h"
+#include "demo/attributes/basic_motion.h"
+#include "demo/attributes/toggle_wireframe.h"
+#include "demo/attributes/movement_controller.h"
 
 // `_ROOT_DIR` is set via cmake
 std::string ROOT_DIR(_ROOT_DIR);
@@ -41,12 +42,12 @@ Material suzanne_mat;
 Material cactus_mat;
 
 DemoController::DemoController() {
-    framerate_layer.add_attribute(std::make_shared<CaptureFramerate>(&framerate_layer));
+    ADD_ATTRIBUTE(framerate_layer, CaptureFramerate);
 
     suzanne.request_resource(Texture, ROOT_DIR + "/demo/resources/images/chinese_garden.png");
     suzanne.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/suzanne.obj");
-    suzanne.add_attribute(std::make_shared<BasicMotion>(&suzanne));
-    suzanne.add_attribute(std::make_shared<ToggleWireframe>(&suzanne));
+    ADD_ATTRIBUTE(suzanne, BasicMotion);
+    ADD_ATTRIBUTE(suzanne, ToggleWireframe);
 
     suzanne_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     suzanne_mat.set("metallic", 1.0f);
@@ -59,9 +60,9 @@ DemoController::DemoController() {
 
     cactus.request_resource(Texture, ROOT_DIR + "/demo/resources/images/cactus.png");
     cactus.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/cactus.obj");
-    cactus.add_attribute(std::make_shared<ToggleWireframe>(&cactus));
     cactus.set_scale(4.0f);
     cactus.set_position(-1.0f, 1.0f, 1.0f);
+    ADD_ATTRIBUTE(cactus, ToggleWireframe);
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     cactus_mat.set("metallic", 0.0f);
@@ -74,7 +75,8 @@ DemoController::DemoController() {
 
     skybox.request_resource(Texture, ROOT_DIR + "/demo/resources/images/chinese_garden.png");
 
-    script_layer.add_attribute(std::make_shared<FirstPersonCamera>());
+    ADD_GENERIC_ATTRIBUTE(script_layer, FirstPersonCamera);
+    ADD_GENERIC_ATTRIBUTE(script_layer, MovementController);
 }
 
 DemoController::~DemoController() {
@@ -84,31 +86,31 @@ DemoController::~DemoController() {
 void DemoController::pre_application_startup() {
     // We have to send some events to the application to setup our layers and shaders
 
-    this->outgoing_events.enqueue({LayerModifyRequest, {
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &suzanne,
         &base_shader
     }});
 
-    this->outgoing_events.enqueue({LayerModifyRequest, {
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &cactus,
         &base_shader
     }});
 
-    this->outgoing_events.enqueue({LayerModifyRequest, {
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &framerate_layer,
         &text_shader
     }});
 
-    this->outgoing_events.enqueue({LayerModifyRequest, {
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &skybox,
         &sky_shader
     }});
 
-    this->outgoing_events.enqueue({LayerModifyRequest, {
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD_BLANK,
         &script_layer
     }});
@@ -125,24 +127,16 @@ void DemoController::process_resource_requests() {
         while ((request = layer->pop_resource_request()).has_value()) {
             switch (request->type) {
             case MeshResource:
-                this->outgoing_events.enqueue({MeshLoadRequest, {layer, request->name}});
+                this->outgoing_events.enqueue({EventType::MeshLoadRequest, {layer, request->name}});
                 break;
             case Texture:
-                this->outgoing_events.enqueue({TextureLoadRequest, {layer, request->name}});
+                this->outgoing_events.enqueue({EventType::TextureLoadRequest, {layer, request->name}});
                 break;
             default:
                 PLOGW << "Got unknown resource request type";
                 break;
             }
         }
-    }
-}
-
-void DemoController::handle_key_event(int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        this->outgoing_events.enqueue({LayerUpdateRequest, {}});
-    } else if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        this->outgoing_events.enqueue({LayerUpdateRequest, {}});
     }
 }
 
@@ -157,33 +151,21 @@ void DemoController::process_events(bool single_pass) {
         event = this->incoming_events.dequeue();
 
         switch (event.type) {
-        case WindowResize:
+        case EventType::WindowResize:
             PLOGI << "Got window resize event";
             PLOGI << "W: " << INT(0) << ", H: " << INT(1);
-            this->outgoing_events.enqueue({LayerUpdateRequest, {}});
+            this->outgoing_events.enqueue({EventType::LayerUpdateRequest, {}});
             break;
-        case Key:
-            this->handle_key_event(INT(0), INT(1), INT(2), INT(3));
-            break;
-        case MeshLoad:
+        case EventType::MeshLoad:
             LAYER(0)->receive_resource(MeshResource, STRING(1), VOID(2));
             break;
-        case TextureLoad:
+        case EventType::TextureLoad:
             LAYER(0)->receive_resource(Texture, STRING(1), VOID(2));
             break;
-        case Break:
+        case EventType::Break:
             PLOGI << "Got Break event. Exiting";
             return;
-        case CursorPosition:
-        case Tick1:
-        case Tick10:
-        case Tick100:
-        case Framerate:
-        case BeginDraw:
-        case EndDraw:
-            break;
         default:
-            PLOGW << "Got unknown event type";
             break;
         }
     }

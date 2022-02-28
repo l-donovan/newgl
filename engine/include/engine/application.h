@@ -44,7 +44,7 @@ class Application {
         static void global_cursor_pos_callback(GLFWwindow *window, double x_pos, double y_pos);
         static void global_window_size_callback(GLFWwindow *window, int width, int height);
         static void global_key_event_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
-        static void send_event(Event e);
+        static void global_scroll_event_callback(GLFWwindow *window, double x_offset, double y_offset);
 
         void resize_window(int width, int height);
         Mesh* load_mesh(string filename);
@@ -69,10 +69,10 @@ class Application {
         static int width;
         static int height;
 
-        static glm::mat4 view; // TODO: Do this a better way
         static struct camera_t camera;
 
         SafeQueue<Event> mt_queue;
 
         static camera_t* get_camera(uint8_t idx);
+        static void send_event(Event e); // TODO: This really should be private, but don't have a better way for attributes to send events yet
 };

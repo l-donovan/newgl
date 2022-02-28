@@ -30,6 +30,44 @@ using variant_t = std::variant<
     int, float, double, long, bool, std::string,
     Layer*, Shader*, void*, SDL_Surface*, Mesh*>;
 
+enum EventType {
+    WindowResize,
+    Key,
+    CursorPosition,
+    Scroll,
+    Initialize,
+    MeshLoad,
+    TextureLoad,
+    Framerate,
+
+    WindowResizeRequest,
+    LayerUpdateRequest,
+    BufferModifyRequest,
+    LayerModifyRequest,
+    MeshLoadRequest,
+    TextureLoadRequest,
+    CameraUpdateRequest,
+    AttributeModifyRequest,
+
+    // Right now, ticks are just frames, but who's counting?
+    Tick1,
+    Tick10,
+    Tick100,
+
+    BeginDraw,
+    EndDraw,
+
+    MTBindTexture,
+    MTNotifyMeshLoad,
+    MTUpdateLayers,
+
+    // Control events
+    Break,
+
+    // This is necessary for custom events to work
+    END,
+};
+
 struct Event {
     enum EventType type;
     std::vector<variant_t> data;

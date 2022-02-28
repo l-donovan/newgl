@@ -17,7 +17,6 @@ class Attribute {
         Attribute() {};
 
         void subscribe(EventType event_type) {
-            PLOGD << "Subscribing to event of type " << event_type;
             this->subscription_queue.push(event_type);
         };
 

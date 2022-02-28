@@ -18,45 +18,16 @@ using std::string;
 #define SURFACE(X) std::get<SDL_Surface*>(event.data[X])
 #define MESH(X)    std::get<Mesh*>(event.data[X])
 
+#define ADD_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(&layer __VA_OPT__(, ) __VA_ARGS__))
+#define ADD_GENERIC_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(__VA_ARGS__))
+
 struct camera_t {
     glm::vec3 position;
     glm::mat4 view;
     glm::mat4 projection;
+    float yaw;
+    float pitch;
     float vfov;
-};
-
-enum EventType {
-    WindowResize,
-    Key,
-    CursorPosition,
-    Initialize,
-    MeshLoad,
-    TextureLoad,
-    Framerate,
-
-    WindowResizeRequest,
-    LayerUpdateRequest,
-    BufferModifyRequest,
-    LayerModifyRequest,
-    MeshLoadRequest,
-    TextureLoadRequest,
-    CameraUpdateRequest,
-    AttributeModifyRequest,
-
-    // Right now, ticks are just frames, but who's counting?
-    Tick1,
-    Tick10,
-    Tick100,
-
-    BeginDraw,
-    EndDraw,
-
-    MTBindTexture,
-    MTNotifyMeshLoad,
-    MTUpdateLayers,
-
-    // Control events
-    Break,
 };
 
 enum ResourceType {

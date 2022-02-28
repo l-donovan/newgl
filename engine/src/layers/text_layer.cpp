@@ -13,8 +13,6 @@
 #include "engine/text_layer.h"
 #include "engine/application.h"
 
-#include "engine/attributes/capture_framerate.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -250,7 +248,6 @@ void TextLayer::teardown() {
 
 void TextLayer::set_text(string text) {
     this->text = text;
-    //this->char_count = text.length();
     this->calculate_attribute_buffers();
 }
 
@@ -366,34 +363,33 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
                 continue;
             }
 
-            if (column < columns) {
-                advance = glyph.advance / 64.0f * to_screen_width;
-                bearing_x = float(glyph.bearing.x) * to_screen_width;
-                bearing_y = float(glyph.bearing.y) * to_screen_height;
-                width = float(glyph.size.x) * to_screen_width;
-                height = float(glyph.size.y) * to_screen_height;
+            advance = glyph.advance / 64.0f * to_screen_width;
+            bearing_x = float(glyph.bearing.x) * to_screen_width;
+            bearing_y = float(glyph.bearing.y) * to_screen_height;
+            width = float(glyph.size.x) * to_screen_width;
+            height = float(glyph.size.y) * to_screen_height;
 
-                x_pos = last_x + bearing_x;
-                y_pos = this->y_insert_pos_bottom + bearing_y - font_height;
+            x_pos = last_x + bearing_x;
+            y_pos = this->y_insert_pos_bottom + bearing_y - font_height;
 
-                VEC2(vertices, idx,     x_pos,         y_pos - height)
-                VEC2(vertices, idx + 1, x_pos,         y_pos         )
-                VEC2(vertices, idx + 2, x_pos + width, y_pos         )
-                VEC2(vertices, idx + 3, x_pos + width, y_pos - height)
+            VEC2(vertices, idx,     x_pos,         y_pos - height)
+            VEC2(vertices, idx + 1, x_pos,         y_pos         )
+            VEC2(vertices, idx + 2, x_pos + width, y_pos         )
+            VEC2(vertices, idx + 3, x_pos + width, y_pos - height)
 
-                VEC2(uvs, idx,     glyph.uv_start.x, glyph.uv_stop.y )
-                VEC2(uvs, idx + 1, glyph.uv_start.x, glyph.uv_start.y)
-                VEC2(uvs, idx + 2, glyph.uv_stop.x,  glyph.uv_start.y)
-                VEC2(uvs, idx + 3, glyph.uv_stop.x,  glyph.uv_stop.y )
+            VEC2(uvs, idx,     glyph.uv_start.x, glyph.uv_stop.y )
+            VEC2(uvs, idx + 1, glyph.uv_start.x, glyph.uv_start.y)
+            VEC2(uvs, idx + 2, glyph.uv_stop.x,  glyph.uv_start.y)
+            VEC2(uvs, idx + 3, glyph.uv_stop.x,  glyph.uv_stop.y )
 
-                VEC4(colors, idx,     1.0f, 0.0f, 0.0f, 1.0f)
-                VEC4(colors, idx + 1, 1.0f, 0.0f, 0.0f, 1.0f)
-                VEC4(colors, idx + 2, 1.0f, 0.0f, 0.0f, 1.0f)
-                VEC4(colors, idx + 3, 1.0f, 0.0f, 0.0f, 1.0f)
+            VEC4(colors, idx,     1.0f, 0.0f, 0.0f, 1.0f)
+            VEC4(colors, idx + 1, 1.0f, 0.0f, 0.0f, 1.0f)
+            VEC4(colors, idx + 2, 1.0f, 0.0f, 0.0f, 1.0f)
+            VEC4(colors, idx + 3, 1.0f, 0.0f, 0.0f, 1.0f)
 
-                last_x += advance;
-                column++;
-            }
+            last_x += advance;
+
+            column++;
         }
 
         this->y_insert_pos_bottom -= font_height;
@@ -460,10 +456,9 @@ void TextLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glVertexAttribPointer(this->color_location, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
-    glDrawElements(GL_TRIANGLES, 6 * this->text.length(), GL_UNSIGNED_SHORT, 0); // TODO: YUCK
+    glDrawElements(GL_TRIANGLES, 6 * this->char_count, GL_UNSIGNED_SHORT, 0);
 
     glDisableVertexAttribArray(this->vertex_location);
     glDisableVertexAttribArray(this->uv_location);
     glDisableVertexAttribArray(this->color_location);
-
 }

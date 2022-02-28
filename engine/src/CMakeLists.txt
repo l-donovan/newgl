@@ -16,11 +16,6 @@ add_library(engine
     layers/entity_layer.cpp
     layers/sky_layer.cpp
     layers/text_layer.cpp
-    layers/script_layer.cpp
-
-    attributes/basic_motion.cpp
-    attributes/capture_framerate.cpp
-    attributes/first_person_camera.cpp
-    attributes/toggle_wireframe.cpp)
+    layers/script_layer.cpp)
 
 target_link_libraries(engine PRIVATE glad)

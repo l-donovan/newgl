@@ -13,6 +13,5 @@ void main() {
     v_uv = tex_coord.xy;
     v_color = color;
 
-    //gl_Position = projection * view * model * vertex;
     gl_Position = model * vec4(vertex, 0.0f, 1.0f);
 }

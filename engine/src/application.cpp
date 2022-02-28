@@ -35,8 +35,6 @@ camera_t Application::cameras[256];
 int Application::width = 0;
 int Application::height = 0;
 
-glm::mat4 Application::view = glm::mat4(1.0);
-
 int frame_count = 0;
 float frame_duration_sum = 0.0f;
 int fps_samples = 60;
@@ -60,10 +58,7 @@ void Application::global_cursor_pos_callback(GLFWwindow *window, double x_pos, d
     double x_adj = x_pos / Application::width;
     double y_adj = y_pos / Application::height;
 
-    if (x_adj < 0.0 || x_adj > 1.0 || y_adj < 0.0 || y_adj > 1.0)
-        return;
-
-    Application::send_event({CursorPosition, {x_adj, y_adj}});
+    Application::send_event({EventType::CursorPosition, {x_adj, y_adj}});
 }
 
 void Application::global_window_size_callback(GLFWwindow *window, int width, int height) {
@@ -72,15 +67,19 @@ void Application::global_window_size_callback(GLFWwindow *window, int width, int
     Application::width = width;
     Application::height = height;
 
-    Application::send_event({WindowResize, {width, height}});
+    Application::send_event({EventType::WindowResize, {width, height}});
 }
 
 void Application::global_key_event_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     } else {
-        Application::send_event({Key, {key, scancode, action, mods}});
+        Application::send_event({EventType::Key, {key, scancode, action, mods}});
     }
+}
+
+void Application::global_scroll_event_callback(GLFWwindow *window, double x_offset, double y_offset) {
+    Application::send_event({EventType::Scroll, {x_offset, y_offset}});
 }
 
 void Application::send_event(Event e) {
@@ -131,6 +130,7 @@ bool Application::startup() {
     glfwSetKeyCallback(this->win, Application::global_key_event_callback);
     glfwSetCursorPosCallback(this->win, Application::global_cursor_pos_callback);
     glfwSetWindowSizeCallback(this->win, Application::global_window_size_callback);
+    glfwSetScrollCallback(this->win, Application::global_scroll_event_callback);
 
     glfwMakeContextCurrent(this->win);
     gladLoadGL();
@@ -148,26 +148,10 @@ bool Application::startup() {
     // Set our initial window size
     glfwGetWindowSize(this->win, &Application::width, &Application::height);
 
+    // Disable the cursor
+    glfwSetInputMode(this->win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     return true;
-}
-
-glm::mat4 construct_view(glm::vec3 eye, float pitch, float yaw) {
-    float cos_pitch = cos(pitch);
-    float sin_pitch = sin(pitch);
-    float cos_yaw = cos(yaw);
-    float sin_yaw = sin(yaw);
-
-    glm::vec3 x_axis(cos_yaw, 0, -sin_yaw);
-    glm::vec3 y_axis(sin_yaw * sin_pitch, cos_pitch, cos_yaw * sin_pitch);
-    glm::vec3 z_axis(sin_yaw * cos_pitch, -sin_pitch, cos_pitch * cos_yaw);
-
-    // Create a 4x4 view matrix from the right, up, forward and eye position vectors
-    return {
-        {x_axis.x, y_axis.x, z_axis.x, 0},
-        {x_axis.y, y_axis.y, z_axis.y, 0},
-        {x_axis.z, y_axis.z, z_axis.z, 0},
-        {-glm::dot(x_axis, eye), -glm::dot(y_axis, eye), -glm::dot(z_axis, eye), 1}
-    };
 }
 
 void Application::draw() {
@@ -193,9 +177,9 @@ void Application::draw() {
                     used = true;
                 }
 
-                Application::send_event({BeginDraw, {layer}});
+                Application::send_event({EventType::BeginDraw, {layer}});
                 layer->draw(camera->view, camera->projection, *camera);
-                Application::send_event({EndDraw, {layer}});
+                Application::send_event({EventType::EndDraw, {layer}});
             }
         }
     }
@@ -212,12 +196,12 @@ void Application::draw() {
                     used = true;
                 }
 
-                Application::send_event({BeginDraw, {layer}});
+                Application::send_event({EventType::BeginDraw, {layer}});
                 if (layer->material != nullptr) {
                     layer->material->apply(shader);
                 }
                 layer->draw(camera->view, camera->projection, *camera);
-                Application::send_event({EndDraw, {layer}});
+                Application::send_event({EventType::EndDraw, {layer}});
             }
         }
     }
@@ -250,7 +234,7 @@ Mesh* Application::load_mesh(string filename) {
 void Application::process_mesh_load_request(Layer *requesting_layer, string filename) {
     Mesh *mesh = this->load_mesh(filename);
 
-    Application::mt_queue.enqueue({MTNotifyMeshLoad, {
+    Application::mt_queue.enqueue({EventType::MTNotifyMeshLoad, {
         requesting_layer,
         filename,
         mesh
@@ -272,7 +256,7 @@ void Application::process_texture_load_request(Layer *requesting_layer, string f
 
         *((int*)ptr) = it->second;
 
-        Application::controller->incoming_events.enqueue({TextureLoad, {
+        Application::controller->incoming_events.enqueue({EventType::TextureLoad, {
             requesting_layer,
             filename,
             ptr,
@@ -280,7 +264,7 @@ void Application::process_texture_load_request(Layer *requesting_layer, string f
     } else {
         SDL_Surface *texture = load_texture(filename.c_str());
 
-        Application::mt_queue.enqueue({MTBindTexture, {
+        Application::mt_queue.enqueue({EventType::MTBindTexture, {
             requesting_layer,
             filename,
             texture,
@@ -302,7 +286,7 @@ void Application::process_mt_bind_texture(Layer *requesting_layer, string filena
 
     this->textures[filename] = texture_id;
 
-    Application::controller->incoming_events.enqueue({TextureLoad, {
+    Application::controller->incoming_events.enqueue({EventType::TextureLoad, {
         requesting_layer,
         filename,
         ptr,
@@ -317,13 +301,13 @@ void Application::process_events(bool single_pass) {
         event = Application::controller->outgoing_events.dequeue();
 
         switch (event.type) {
-        case WindowResizeRequest:
+        case EventType::WindowResizeRequest:
             this->resize_window(INT(0), INT(1));
             break;
-        case LayerUpdateRequest:
-            this->mt_queue.enqueue({MTUpdateLayers, {}});
+        case EventType::LayerUpdateRequest:
+            this->mt_queue.enqueue({EventType::MTUpdateLayers, {}});
             break;
-        case LayerModifyRequest:
+        case EventType::LayerModifyRequest:
             if (INT(0) == EVENT_LAYER_ADD) {
                 PLOGD << "Got layer add request";
                 this->add_layer(LAYER(1), SHADER(2));
@@ -332,17 +316,17 @@ void Application::process_events(bool single_pass) {
                 this->add_layer(LAYER(1), nullptr);
             }
             break;
-        case MeshLoadRequest:
+        case EventType::MeshLoadRequest:
             PLOGD << "Got mesh load request";
             this->process_mesh_load_request(LAYER(0), STRING(1));
             break;
-        case TextureLoadRequest:
+        case EventType::TextureLoadRequest:
             PLOGD << "Got texture load request";
             this->process_texture_load_request(LAYER(0), STRING(1));
             break;
-        case CameraUpdateRequest:
+        case EventType::CameraUpdateRequest:
             break;
-        case Break:
+        case EventType::Break:
             PLOGI << "Got Break event. Exiting";
             return;
         default:
@@ -361,13 +345,13 @@ void Application::process_mt_events() {
         event = this->mt_queue.dequeue();
 
         switch (event.type) {
-        case MTBindTexture:
+        case EventType::MTBindTexture:
             this->process_mt_bind_texture(LAYER(0), STRING(1), SURFACE(2));
             break;
-        case MTNotifyMeshLoad:
+        case EventType::MTNotifyMeshLoad:
             LAYER(0)->receive_resource(MeshResource, STRING(1), (void*) MESH(2));
             break;
-        case MTUpdateLayers:
+        case EventType::MTUpdateLayers:
             for (Shader *shader : this->shaders) {
                 shader->update();
             }
@@ -392,7 +376,7 @@ void Application::main_loop() {
     std::chrono::duration<float, std::milli> sleep_duration;
     bool ahead;
 
-    Application::send_event({WindowResize, {Application::width, Application::height}});
+    Application::send_event({EventType::WindowResize, {Application::width, Application::height}});
 
     while (!glfwWindowShouldClose(this->win)) {
         // Start the timer where we left off
@@ -409,13 +393,13 @@ void Application::main_loop() {
         glfwPollEvents();
 
         // Send tick events
-        Application::send_event({Tick1, {total_frame_count}});
+        Application::send_event({EventType::Tick1, {total_frame_count}});
 
         if (total_frame_count % 10 == 0)
-            Application::send_event({Tick10, {total_frame_count}});
+            Application::send_event({EventType::Tick10, {total_frame_count}});
 
         if (total_frame_count % 100 == 0)
-            Application::send_event({Tick100, {total_frame_count}});
+            Application::send_event({EventType::Tick100, {total_frame_count}});
 
         // Calculate the time it took to draw the current frame, and determine if we are ahead
         // of or behind schedule
@@ -431,13 +415,13 @@ void Application::main_loop() {
                 // We're ahead of schedule! (Or at least on time)
                 float ahead_percent = 100.0f * sleep_duration.count() / (1000.0f / this->fps_target);
                 PLOGD << "FPS: " << this->fps_target << ", ahead " << ahead_percent << "%";
-                Application::send_event({Framerate, {float(this->fps_target), ahead_percent}});
+                Application::send_event({EventType::Framerate, {float(this->fps_target), ahead_percent}});
             } else {
                 // We're behind schedule!
                 auto fps = 1000.0f / (frame_duration_sum / fps_samples);
                 float behind_percent = -100.0f * sleep_duration.count() / (1000.0f / this->fps_target);
                 PLOGW << "FPS: " << fps << ", behind " << behind_percent << "%";
-                Application::send_event({Framerate, {fps, -behind_percent}});
+                Application::send_event({EventType::Framerate, {fps, -behind_percent}});
             }
 
             frame_count = 0;
@@ -455,8 +439,8 @@ void Application::main_loop() {
         ++total_frame_count;
     }
 
-    Application::controller->outgoing_events.enqueue({Break, {}});
-    Application::controller->incoming_events.enqueue({Break, {}});
+    Application::controller->outgoing_events.enqueue({EventType::Break, {}});
+    Application::controller->incoming_events.enqueue({EventType::Break, {}});
 
     application_event_thread.join();
     controller_event_thread.join();
@@ -496,8 +480,8 @@ void Application::add_attribute(std::shared_ptr<Attribute> attr) {
     std::optional<EventType> event_type;
 
     while ((event_type = attr->pop_subscription_request()).has_value()) {
-        if (*event_type == Initialize) {
-            attr->receive_event({Initialize, {}});
+        if (*event_type == EventType::Initialize) {
+            attr->receive_event({EventType::Initialize, {}});
         } else {
             Application::attribute_event_subscribers[*event_type].push_back(attr);
         }
