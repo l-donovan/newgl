@@ -2,9 +2,9 @@
 
 #include "engine/global.h"
 #include "engine/attribute.h"
-#include "engine/entity_layer.h"
 #include "engine/common.h"
 #include "engine/event.h"
+#include "engine/layers/entity_layer.h"
 
 class BasicMotion : public Attribute {
     private:

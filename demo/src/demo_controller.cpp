@@ -6,16 +6,21 @@
 #include "engine/material.h"
 #include "engine/shader.h"
 
-#include "engine/entity_layer.h"
-#include "engine/script_layer.h"
-#include "engine/sky_layer.h"
-#include "engine/text_layer.h"
+#include "engine/layers/entity_layer.h"
+#include "engine/layers/script_layer.h"
+#include "engine/layers/sky_layer.h"
+#include "engine/layers/text_layer.h"
 
 #include "demo/attributes/capture_framerate.h"
 #include "demo/attributes/first_person_camera.h"
 #include "demo/attributes/basic_motion.h"
 #include "demo/attributes/toggle_wireframe.h"
 #include "demo/attributes/movement_controller.h"
+#include "demo/attributes/toggle_cursor.h"
+#include "demo/attributes/grab_input.h"
+#include "demo/attributes/material_adapter.h"
+
+#include "demo/layers/material_editor.h"
 
 // `_ROOT_DIR` is set via cmake
 std::string ROOT_DIR(_ROOT_DIR);
@@ -37,6 +42,7 @@ EntityLayer cactus;
 TextLayer framerate_layer;
 SkyLayer skybox;
 ScriptLayer script_layer;
+MaterialEditor material_editor;
 
 Material suzanne_mat;
 Material cactus_mat;
@@ -77,6 +83,10 @@ DemoController::DemoController() {
 
     ADD_GENERIC_ATTRIBUTE(script_layer, FirstPersonCamera);
     ADD_GENERIC_ATTRIBUTE(script_layer, MovementController);
+    ADD_GENERIC_ATTRIBUTE(script_layer, ToggleCursor);
+
+    ADD_GENERIC_ATTRIBUTE(material_editor, GrabInput);
+    ADD_ATTRIBUTE(material_editor, MaterialAdapter, &suzanne_mat);
 }
 
 DemoController::~DemoController() {
@@ -113,6 +123,13 @@ void DemoController::pre_application_startup() {
     this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD_BLANK,
         &script_layer
+    }});
+
+    // TODO: The sky_shader is arbitrary. We shouldn't need a shader for a draw call
+    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
+        EVENT_LAYER_ADD,
+        &material_editor,
+        &sky_shader
     }});
 }
 

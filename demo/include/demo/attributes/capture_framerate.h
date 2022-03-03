@@ -2,9 +2,9 @@
 
 #include "engine/global.h"
 #include "engine/attribute.h"
-#include "engine/text_layer.h"
 #include "engine/common.h"
 #include "engine/event.h"
+#include "engine/layers/text_layer.h"
 
 class CaptureFramerate : public Attribute {
     private:
