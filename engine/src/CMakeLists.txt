@@ -16,6 +16,7 @@ add_library(engine
     layers/entity_layer.cpp
     layers/sky_layer.cpp
     layers/text_layer.cpp
-    layers/script_layer.cpp)
+    layers/script_layer.cpp
+    layers/imgui_layer.cpp)
 
 target_link_libraries(engine PRIVATE glad)

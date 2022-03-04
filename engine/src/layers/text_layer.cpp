@@ -9,8 +9,8 @@
 #include <freetype/ftlcdfil.h>
 #include FT_FREETYPE_H
 
+#include "engine/layers/text_layer.h"
 #include "engine/global.h"
-#include "engine/text_layer.h"
 #include "engine/application.h"
 
 #include <algorithm>
@@ -382,10 +382,10 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
             VEC2(uvs, idx + 2, glyph.uv_stop.x,  glyph.uv_start.y)
             VEC2(uvs, idx + 3, glyph.uv_stop.x,  glyph.uv_stop.y )
 
-            VEC4(colors, idx,     1.0f, 0.0f, 0.0f, 1.0f)
-            VEC4(colors, idx + 1, 1.0f, 0.0f, 0.0f, 1.0f)
-            VEC4(colors, idx + 2, 1.0f, 0.0f, 0.0f, 1.0f)
-            VEC4(colors, idx + 3, 1.0f, 0.0f, 0.0f, 1.0f)
+            VEC4(colors, idx,     1.0f, 1.0f, 1.0f, 1.0f)
+            VEC4(colors, idx + 1, 1.0f, 1.0f, 1.0f, 1.0f)
+            VEC4(colors, idx + 2, 1.0f, 1.0f, 1.0f, 1.0f)
+            VEC4(colors, idx + 3, 1.0f, 1.0f, 1.0f, 1.0f)
 
             last_x += advance;
 

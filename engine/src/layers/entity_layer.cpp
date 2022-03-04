@@ -7,9 +7,9 @@
 
 #include <plog/Log.h>
 
+#include "engine/layers/entity_layer.h"
 #include "engine/global.h"
 #include "engine/common.h"
-#include "engine/entity_layer.h"
 #include "engine/mesh.h"
 
 #include <algorithm>

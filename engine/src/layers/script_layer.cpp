@@ -7,9 +7,9 @@
 
 #include <plog/Log.h>
 
+#include "engine/layers/script_layer.h"
 #include "engine/common.h"
 #include "engine/global.h"
-#include "engine/script_layer.h"
 
 using std::string;
 

@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "engine/map.h"
+
 #include <string>
 
 using std::string;
@@ -21,6 +23,29 @@ using std::string;
 #define ADD_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(&layer __VA_OPT__(, ) __VA_ARGS__))
 #define ADD_GENERIC_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(__VA_ARGS__))
 
+#define CONTAINS(iterable, val) iterable.find(val) != iterable.end()
+
+#define CAT(x, y) CAT_(x, y)
+#define CAT_(x, y) x ## y
+#define GENERATE_ENUM(ENUM) ENUM,
+#define GENERATE_STRING(STRING) #STRING,
+#define ENUM_NAME(NAME, VAL) CAT(NAME, _names)[VAL]
+
+#define GENERATE_ENUM_WITH_NAMES(NAME, ...) \
+    enum NAME { MAP(GENERATE_ENUM, __VA_ARGS__) }; \
+    static const char *CAT(NAME, _names)[] = { MAP(GENERATE_STRING, __VA_ARGS__) };
+
+GENERATE_ENUM_WITH_NAMES(ResourceType, 
+    MeshResource,
+    Texture
+)
+
+GENERATE_ENUM_WITH_NAMES(InputEventType,
+    CursorPositionInput,
+    KeyInput,
+    MouseButtonInput
+)
+
 struct camera_t {
     glm::vec3 position;
     glm::mat4 view;
@@ -28,11 +53,6 @@ struct camera_t {
     float yaw;
     float pitch;
     float vfov;
-};
-
-enum ResourceType {
-    MeshResource,
-    Texture,
 };
 
 struct resource_request_t {

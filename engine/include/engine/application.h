@@ -24,7 +24,6 @@ class Application {
         string window_title;
         int initial_width;
         int initial_height;
-        GLFWwindow *win;
         vector<Shader*> shaders;
 
         std::map<std::string, Mesh> meshes;
@@ -45,6 +44,7 @@ class Application {
         static void global_window_size_callback(GLFWwindow *window, int width, int height);
         static void global_key_event_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
         static void global_scroll_event_callback(GLFWwindow *window, double x_offset, double y_offset);
+        static void global_mouse_button_callback(GLFWwindow *window, int button, int action, int mods);
 
         void resize_window(int width, int height);
         Mesh* load_mesh(string filename);
@@ -56,6 +56,7 @@ class Application {
         void process_mt_bind_texture(Layer *requesting_layer, string filename, SDL_Surface *texture);
 
         static camera_t cameras[256];
+        static std::map<InputEventType, std::shared_ptr<Attribute>> input_event_exclusivity;
     public:
         Application(string window_title, int initial_width, int initial_height);
         ~Application();
@@ -74,5 +75,10 @@ class Application {
         SafeQueue<Event> mt_queue;
 
         static camera_t* get_camera(uint8_t idx);
+        static GLFWwindow* win;
+
         static void send_event(Event e); // TODO: This really should be private, but don't have a better way for attributes to send events yet
+
+        static void request_exclusive_input(InputEventType type, std::shared_ptr<Attribute> attr);
+        static void release_exclusive_input(InputEventType type);
 };

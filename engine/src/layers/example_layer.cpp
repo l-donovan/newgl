@@ -5,8 +5,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "engine/layers/example_layer.h"
 #include "engine/common.h"
-#include "engine/example_layer.h"
 
 #include <cmath>
 #include <iostream>

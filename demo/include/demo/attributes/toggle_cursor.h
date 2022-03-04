@@ -6,7 +6,7 @@
 #include "engine/common.h"
 #include "engine/event.h"
 
-class ToggleCursor : public Attribute {
+class ToggleCursor : public Attribute, public std::enable_shared_from_this<ToggleCursor> {
     private:
         void handle_key_event(int key, int scancode, int action, int mods);
 
@@ -17,4 +17,8 @@ class ToggleCursor : public Attribute {
         };
 
         void receive_event(Event event);
+
+        std::shared_ptr<ToggleCursor> getptr() {
+            return shared_from_this();
+        }
 };

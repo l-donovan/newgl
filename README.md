@@ -9,7 +9,7 @@ You will need:
 To install the requisite packages:
 ```bash
 $ vcpkg integrate install # If you haven't done so already
-$ vcpkg install glfw3 glm freetype sdl2-image plog
+$ vcpkg install glfw3 glm freetype sdl2-image plog 'imgui[glfw-binding,opengl3-binding]'
 ```
 
 You may need to add an architecture-specific triplet (i.e. `:x64-windows`) to the end of each package.

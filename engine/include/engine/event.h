@@ -30,7 +30,7 @@ using variant_t = std::variant<
     int, float, double, long, bool, std::string,
     Layer*, Shader*, void*, SDL_Surface*, Mesh*>;
 
-enum EventType {
+GENERATE_ENUM_WITH_NAMES(EventType,
     WindowResize,
     Key,
     CursorPosition,
@@ -39,6 +39,7 @@ enum EventType {
     MeshLoad,
     TextureLoad,
     Framerate,
+    MouseButton,
 
     WindowResizeRequest,
     LayerUpdateRequest,
@@ -65,8 +66,8 @@ enum EventType {
     Break,
 
     // This is necessary for custom events to work
-    END,
-};
+    END
+)
 
 struct Event {
     enum EventType type;

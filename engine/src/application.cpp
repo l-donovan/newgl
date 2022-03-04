@@ -5,6 +5,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <plog/Log.h>
 
 #include <algorithm>
@@ -28,8 +32,10 @@
 
 using std::string;
 
+GLFWwindow* Application::win = nullptr;
 Controller* Application::controller = nullptr;
 Application::AttributeEventMap Application::attribute_event_subscribers = {};
+std::map<InputEventType, std::shared_ptr<Attribute>> Application::input_event_exclusivity = {};
 camera_t Application::cameras[256];
 
 int Application::width = 0;
@@ -82,13 +88,38 @@ void Application::global_scroll_event_callback(GLFWwindow *window, double x_offs
     Application::send_event({EventType::Scroll, {x_offset, y_offset}});
 }
 
+void Application::global_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+    Application::send_event({EventType::MouseButton, {button, action, mods}});
+}
+
 void Application::send_event(Event e) {
     Application::controller->incoming_events.enqueue(e);
 
     auto attributes = Application::attribute_event_subscribers[e.type];
 
+    std::shared_ptr<Attribute> target_attr;
+
     for (auto attr = attributes.begin(); attr != attributes.end(); ++attr) {
-        (*attr)->receive_event(e);
+        switch (e.type) {
+        case MouseButton:
+            if (CONTAINS(Application::input_event_exclusivity, MouseButtonInput))
+                target_attr = Application::input_event_exclusivity[MouseButtonInput];
+            break;
+        case Key:
+            if (CONTAINS(Application::input_event_exclusivity, KeyInput))
+                target_attr = Application::input_event_exclusivity[KeyInput];
+            break;
+        case CursorPosition:
+            if (CONTAINS(Application::input_event_exclusivity, CursorPositionInput))
+                target_attr = Application::input_event_exclusivity[CursorPositionInput];
+            break;
+        default:
+            break;
+        }
+
+        if (target_attr == nullptr || target_attr == *attr) {
+            (*attr)->receive_event(e);
+        }
     };
 }
 
@@ -131,6 +162,7 @@ bool Application::startup() {
     glfwSetCursorPosCallback(this->win, Application::global_cursor_pos_callback);
     glfwSetWindowSizeCallback(this->win, Application::global_window_size_callback);
     glfwSetScrollCallback(this->win, Application::global_scroll_event_callback);
+    glfwSetMouseButtonCallback(this->win, Application::global_mouse_button_callback);
 
     glfwMakeContextCurrent(this->win);
     gladLoadGL();
@@ -148,8 +180,21 @@ bool Application::startup() {
     // Set our initial window size
     glfwGetWindowSize(this->win, &Application::width, &Application::height);
 
-    // Disable the cursor
-    glfwSetInputMode(this->win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(this->win, true);
+    ImGui_ImplOpenGL3_Init("#version 410");
 
     return true;
 }
@@ -205,6 +250,9 @@ void Application::draw() {
             }
         }
     }
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(this->win);
 }
@@ -386,11 +434,15 @@ void Application::main_loop() {
 
         this->process_mt_events();
 
-        // Draw frame and time the draw call
-        this->draw();
-
         // Poll for any new glfw events
         glfwPollEvents();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // Draw frame and time the draw call
+        this->draw();
 
         // Send tick events
         Application::send_event({EventType::Tick1, {total_frame_count}});
@@ -450,6 +502,10 @@ void Application::main_loop() {
         shader->teardown();
     }
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     glDeleteVertexArrays(1, &vao);
     glfwDestroyWindow(this->win);
     glfwTerminate();
@@ -490,4 +546,14 @@ void Application::add_attribute(std::shared_ptr<Attribute> attr) {
 
 camera_t* Application::get_camera(uint8_t idx) {
     return &Application::cameras[idx];
+}
+
+void Application::request_exclusive_input(InputEventType type, std::shared_ptr<Attribute> attr) {
+    Application::input_event_exclusivity[type] = attr;
+    PLOGD << "Granting exclusive " << ENUM_NAME(InputEventType, type) << " request";
+}
+
+void Application::release_exclusive_input(InputEventType type) {
+    Application::input_event_exclusivity.erase(type);
+    PLOGD << "Releasing exclusive " << ENUM_NAME(InputEventType, type) << " request";
 }
