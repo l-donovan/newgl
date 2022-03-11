@@ -27,12 +27,11 @@ using std::string;
 
 #define CAT(x, y) CAT_(x, y)
 #define CAT_(x, y) x ## y
-#define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 #define ENUM_NAME(NAME, VAL) CAT(NAME, _names)[VAL]
 
 #define GENERATE_ENUM_WITH_NAMES(NAME, ...) \
-    enum NAME { MAP(GENERATE_ENUM, __VA_ARGS__) }; \
+    enum NAME { __VA_ARGS__ }; \
     static const char *CAT(NAME, _names)[] = { MAP(GENERATE_STRING, __VA_ARGS__) };
 
 GENERATE_ENUM_WITH_NAMES(ResourceType, 
@@ -43,7 +42,8 @@ GENERATE_ENUM_WITH_NAMES(ResourceType,
 GENERATE_ENUM_WITH_NAMES(InputEventType,
     CursorPositionInput,
     KeyInput,
-    MouseButtonInput
+    MouseButtonInput,
+    ScrollInput
 )
 
 struct camera_t {

@@ -24,9 +24,10 @@ class MaterialEditor : public ImguiLayer {
         void receive_resource(ResourceType type, string name, void *data);
 
         float color[3] = {0.6, 0.5, 0.6};
-        float metallic = 1.0f;
-        float roughness = 1.0f;
-        float reflectance = 0.5f;
-        float clear_coat = 0.1f;
-        float clear_coat_roughness = 0.1f;
+        float light_color[3] = {1.0, 1.0, 1.0};
+        float light_pos[3] = {-2.0, 1.0, 3.0};
+        float ambient_color[3] = {0.8, 0.8, 0.7};
+
+        float ambient_strength = 0.1;
+        float specular_strength = 0.5;
 };

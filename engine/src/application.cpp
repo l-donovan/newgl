@@ -113,6 +113,10 @@ void Application::send_event(Event e) {
             if (CONTAINS(Application::input_event_exclusivity, CursorPositionInput))
                 target_attr = Application::input_event_exclusivity[CursorPositionInput];
             break;
+        case Scroll:
+            if (CONTAINS(Application::input_event_exclusivity, ScrollInput))
+                target_attr = Application::input_event_exclusivity[ScrollInput];
+            break;
         default:
             break;
         }

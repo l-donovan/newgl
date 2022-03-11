@@ -13,8 +13,10 @@ void GrabInput::handle_cursor_position(double x, double y) {
 
     if (this->in_window && !prev) {
         Application::request_exclusive_input(CursorPositionInput, this->getptr());
+        Application::request_exclusive_input(ScrollInput, this->getptr());
     } else if (!this->in_window && prev) {
         Application::release_exclusive_input(CursorPositionInput);
+        Application::release_exclusive_input(ScrollInput);
     }
 }
 

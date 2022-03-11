@@ -4,11 +4,11 @@
 
 void MaterialAdapter::handle_tick10() {
     this->material->set("color", glm::make_vec3(this->editor->color));
-    this->material->set("metallic", this->editor->metallic);
-    this->material->set("roughness", this->editor->roughness);
-    this->material->set("reflectance", this->editor->reflectance);
-    this->material->set("clear_coat", this->editor->clear_coat);
-    this->material->set("clear_coat_roughness", this->editor->clear_coat_roughness);
+    this->material->set("light_pos", glm::make_vec3(this->editor->light_pos));
+    this->material->set("light_color", glm::make_vec3(this->editor->light_color));
+    this->material->set("ambient_strength", this->editor->ambient_strength);
+    this->material->set("specular_strength", this->editor->specular_strength);
+    this->material->set("ambient_color", glm::make_vec3(this->editor->ambient_color));
 }
 
 void MaterialAdapter::receive_event(Event event) {

@@ -25,9 +25,9 @@
 // `_ROOT_DIR` is set via cmake
 std::string ROOT_DIR(_ROOT_DIR);
 
-Shader base_shader(
-    ROOT_DIR + "/demo/resources/shaders/base.v.glsl",
-    ROOT_DIR + "/demo/resources/shaders/base.f.glsl");
+Shader phong_shader(
+    ROOT_DIR + "/demo/resources/shaders/phong.v.glsl",
+    ROOT_DIR + "/demo/resources/shaders/phong.f.glsl");
 
 Shader text_shader(
     ROOT_DIR + "/demo/resources/shaders/text.v.glsl",
@@ -56,11 +56,7 @@ DemoController::DemoController() {
     ADD_ATTRIBUTE(suzanne, ToggleWireframe);
 
     suzanne_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
-    suzanne_mat.set("metallic", 1.0f);
-    suzanne_mat.set("roughness", 1.0f);
-    suzanne_mat.set("reflectance", 0.5f);
-    suzanne_mat.set("clear_coat", 0.1f);
-    suzanne_mat.set("clear_coat_roughness", 0.1f);
+    suzanne_mat.set("use_texture", 0);
 
     suzanne.material = &suzanne_mat;
 
@@ -71,11 +67,7 @@ DemoController::DemoController() {
     ADD_ATTRIBUTE(cactus, ToggleWireframe);
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
-    cactus_mat.set("metallic", 0.0f);
-    cactus_mat.set("roughness", 0.1f);
-    cactus_mat.set("reflectance", 0.5f);
-    cactus_mat.set("clear_coat", 0.1f);
-    cactus_mat.set("clear_coat_roughness", 0.1f);
+    cactus_mat.set("use_texture", 1);
 
     cactus.material = &cactus_mat;
 
@@ -87,6 +79,7 @@ DemoController::DemoController() {
 
     ADD_GENERIC_ATTRIBUTE(material_editor, GrabInput);
     ADD_ATTRIBUTE(material_editor, MaterialAdapter, &suzanne_mat);
+    ADD_ATTRIBUTE(material_editor, MaterialAdapter, &cactus_mat);
 }
 
 DemoController::~DemoController() {
@@ -99,13 +92,13 @@ void DemoController::pre_application_startup() {
     this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &suzanne,
-        &base_shader
+        &phong_shader
     }});
 
     this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
         EVENT_LAYER_ADD,
         &cactus,
-        &base_shader
+        &phong_shader
     }});
 
     this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
