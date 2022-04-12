@@ -9,6 +9,12 @@ add_subdirectory(demo)
 set_property(TARGET engine PROPERTY CXX_STANDARD 20)
 set_property(TARGET demo PROPERTY CXX_STANDARD 20)
 
+if(MSVC)
+    # Enable support for __VA_OPT__
+    target_compile_options(engine PRIVATE "/Zc:preprocessor")
+    target_compile_options(demo PRIVATE "/Zc:preprocessor")
+endif()
+
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(freetype CONFIG REQUIRED)

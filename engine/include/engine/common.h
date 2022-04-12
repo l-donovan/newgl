@@ -33,7 +33,6 @@ using std::string;
 #define CAT(x, y) CAT_(x, y)
 #define CAT_(x, y) x ## y
 #define GENERATE_STRING(STRING) #STRING,
-#define NUMARGS(...)  (sizeof((int[]){__VA_ARGS__})/sizeof(int))
 #define ENUM_NAME(NAME, VAL) CAT(NAME, _names)[VAL]
 #define ENUM_FIRST(NAME) CAT(NAME, _first)
 #define ENUM_LAST(NAME) CAT(NAME, _last)
@@ -84,8 +83,9 @@ static char **extract_names(const char* name_str) {
 
 #define GENERATE_ENUM_WITH_NAMES(NAME, ...) \
     enum NAME { __VA_ARGS__ }; \
-    static int CAT(NAME, _first) = ((int[]){__VA_ARGS__})[0]; \
-    static int CAT(NAME, _last) = NUMARGS(__VA_ARGS__) - 1; \
+    static int CAT(NAME, _temp) [] = { __VA_ARGS__ }; \
+    static int CAT(NAME, _first) = CAT(NAME, _temp)[0]; \
+    static int CAT(NAME, _last) = sizeof(CAT(NAME, _temp)) / sizeof(int) - 1; \
     static char **CAT(NAME, _names) = extract_names(#__VA_ARGS__);
 
 GENERATE_ENUM_WITH_NAMES(ResourceType,
