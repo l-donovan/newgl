@@ -10,6 +10,7 @@
 #include "engine/layers/script_layer.h"
 #include "engine/layers/sky_layer.h"
 #include "engine/layers/text_layer.h"
+#include "engine/layers/instance_layer.h"
 
 #include "demo/attributes/capture_framerate.h"
 #include "demo/attributes/first_person_camera.h"
@@ -46,6 +47,23 @@ MaterialEditor material_editor;
 
 Material suzanne_mat;
 Material cactus_mat;
+
+bool instance_handler(int num) {
+    // Skip every 13th suzanne, just for fun
+    if (num % 13 == 0) {
+        return false;
+    }
+
+    int row = num / 50;
+    int col = num % 50;
+    float dist = sqrtf(row * row + col * col);
+
+    suzanne.set_position(1.5f * row, sinf(dist), 1.5f * col);
+
+    return true;
+}
+
+InstanceLayer<EntityLayer> suzanne_instances(2500, &suzanne, instance_handler);
 
 DemoController::DemoController() {
     ADD_ATTRIBUTE(framerate_layer, CaptureFramerate);
@@ -89,7 +107,7 @@ DemoController::~DemoController() {
 void DemoController::pre_application_startup() {
     // We have to send some events to the application to setup our layers and shaders
 
-    ADD_LAYER(suzanne, phong_shader);
+    ADD_LAYER(suzanne_instances, phong_shader);
     ADD_LAYER(cactus, phong_shader);
     ADD_LAYER(framerate_layer, text_shader);
     ADD_LAYER(skybox, sky_shader);
