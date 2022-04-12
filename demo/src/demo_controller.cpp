@@ -89,41 +89,14 @@ DemoController::~DemoController() {
 void DemoController::pre_application_startup() {
     // We have to send some events to the application to setup our layers and shaders
 
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD,
-        &suzanne,
-        &phong_shader
-    }});
-
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD,
-        &cactus,
-        &phong_shader
-    }});
-
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD,
-        &framerate_layer,
-        &text_shader
-    }});
-
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD,
-        &skybox,
-        &sky_shader
-    }});
-
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD_BLANK,
-        &script_layer
-    }});
+    ADD_LAYER(suzanne, phong_shader);
+    ADD_LAYER(cactus, phong_shader);
+    ADD_LAYER(framerate_layer, text_shader);
+    ADD_LAYER(skybox, sky_shader);
+    ADD_BLANK_LAYER(script_layer);
 
     // TODO: The sky_shader is arbitrary. We shouldn't need a shader for a draw call
-    this->outgoing_events.enqueue({EventType::LayerModifyRequest, {
-        EVENT_LAYER_ADD,
-        &material_editor,
-        &sky_shader
-    }});
+    ADD_LAYER(material_editor, sky_shader);
 }
 
 void DemoController::post_application_startup() {

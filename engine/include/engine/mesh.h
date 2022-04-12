@@ -13,13 +13,13 @@ using std::string;
 using std::vector;
 
 class Mesh {
-    public:
-        Mesh() {};
+public:
+    Mesh() {};
 
-        vector<glm::vec4> vertices;
-        vector<glm::vec2> uvs;
-        vector<glm::vec3> normals;
-        vector<GLushort> faces;
+    vector<glm::vec4> vertices;
+    vector<glm::vec2> uvs;
+    vector<glm::vec3> normals;
+    vector<GLushort> faces;
 
-        static Mesh from_obj(string filename);
+    static Mesh from_obj(string filename);
 };

@@ -23,18 +23,27 @@ using std::string;
 #define ADD_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(&layer __VA_OPT__(, ) __VA_ARGS__))
 #define ADD_GENERIC_ATTRIBUTE(layer, attr, ...) layer.add_attribute(std::make_shared<attr>(__VA_ARGS__))
 
+#define ADD_LAYER(layer, shader) this->outgoing_events.enqueue({EventType::LayerModifyRequest, {EVENT_LAYER_ADD, &layer, &shader}})
+#define ADD_BLANK_LAYER(layer) this->outgoing_events.enqueue({EventType::LayerModifyRequest, {EVENT_LAYER_ADD_BLANK, &layer}})
+#define REMOVE_LAYER(layer) this->outgoing_events.enqueue({EventType::LayerModifyRequest, {EVENT_LAYER_REMOVE, &layer}})
+
 #define CONTAINS(iterable, val) iterable.find(val) != iterable.end()
 
 #define CAT(x, y) CAT_(x, y)
 #define CAT_(x, y) x ## y
 #define GENERATE_STRING(STRING) #STRING,
+#define NUMARGS(...)  (sizeof((int[]){__VA_ARGS__})/sizeof(int))
 #define ENUM_NAME(NAME, VAL) CAT(NAME, _names)[VAL]
+#define ENUM_FIRST(NAME) CAT(NAME, _first)
+#define ENUM_LAST(NAME) CAT(NAME, _last)
 
 #define GENERATE_ENUM_WITH_NAMES(NAME, ...) \
     enum NAME { __VA_ARGS__ }; \
-    static const char *CAT(NAME, _names)[] = { MAP(GENERATE_STRING, __VA_ARGS__) };
+    static const char *CAT(NAME, _names)[] = { MAP(GENERATE_STRING, __VA_ARGS__) }; \
+    static int CAT(NAME, _first) = ((int[]){__VA_ARGS__})[0]; \
+    static int CAT(NAME, _last) = NUMARGS(__VA_ARGS__) - 1;
 
-GENERATE_ENUM_WITH_NAMES(ResourceType, 
+GENERATE_ENUM_WITH_NAMES(ResourceType,
     MeshResource,
     Texture
 )

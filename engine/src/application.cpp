@@ -95,43 +95,46 @@ void Application::global_mouse_button_callback(GLFWwindow *window, int button, i
 void Application::send_event(Event e) {
     Application::controller->incoming_events.enqueue(e);
 
-    auto attributes = Application::attribute_event_subscribers[e.type];
-
     std::shared_ptr<Attribute> target_attr;
 
-    for (auto attr = attributes.begin(); attr != attributes.end(); ++attr) {
-        switch (e.type) {
-        case MouseButton:
-            if (CONTAINS(Application::input_event_exclusivity, MouseButtonInput))
-                target_attr = Application::input_event_exclusivity[MouseButtonInput];
-            break;
-        case Key:
-            if (CONTAINS(Application::input_event_exclusivity, KeyInput))
-                target_attr = Application::input_event_exclusivity[KeyInput];
-            break;
-        case CursorPosition:
-            if (CONTAINS(Application::input_event_exclusivity, CursorPositionInput))
-                target_attr = Application::input_event_exclusivity[CursorPositionInput];
-            break;
-        case Scroll:
-            if (CONTAINS(Application::input_event_exclusivity, ScrollInput))
-                target_attr = Application::input_event_exclusivity[ScrollInput];
-            break;
-        default:
-            break;
-        }
+    switch (e.type) {
+    case MouseButton:
+        target_attr = Application::input_event_exclusivity[MouseButtonInput];
+        break;
+    case Key:
+        target_attr = Application::input_event_exclusivity[KeyInput];
+        break;
+    case CursorPosition:
+        target_attr = Application::input_event_exclusivity[CursorPositionInput];
+        break;
+    case Scroll:
+        target_attr = Application::input_event_exclusivity[ScrollInput];
+        break;
+    default:
+        target_attr = nullptr;
+        break;
+    }
 
-        if (target_attr == nullptr || target_attr == *attr) {
+    if (target_attr == nullptr) {
+        auto attributes = Application::attribute_event_subscribers[e.type];
+
+        for (auto attr = attributes.begin(); attr != attributes.end(); ++attr) {
             (*attr)->receive_event(e);
         }
-    };
+    } else {
+        target_attr->receive_event(e);
+    }
 }
 
 static void glfw_error_callback(int error, const char *description) {
-    PLOGE << "Error: " << description;
+    PLOGE << "GLFW error: " << description;
 }
 
 bool Application::startup() {
+    for (int val = ENUM_FIRST(InputEventType); val <= ENUM_LAST(InputEventType); ++val) {
+        Application::input_event_exclusivity[static_cast<InputEventType>(val)] = nullptr;
+    }
+
     // First we want to check if the attached Controller needs us to do anything.
     // Any GL/GLFW-specific events will absolutely break things, however, since
     // neither are initialized at this point.

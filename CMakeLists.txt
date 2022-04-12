@@ -18,6 +18,7 @@ find_package(imgui CONFIG REQUIRED)
 find_path(PLOG_INCLUDE_DIRS "plog/Appenders/AndroidAppender.h")
 
 target_link_libraries(engine PUBLIC glfw)
+target_link_libraries(engine PUBLIC glm::glm)
 target_link_libraries(engine PUBLIC freetype)
 target_link_libraries(engine PUBLIC SDL2::SDL2_image)
 target_include_directories(engine PRIVATE ${PLOG_INCLUDE_DIRS})

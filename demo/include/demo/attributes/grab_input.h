@@ -5,6 +5,8 @@
 
 #include <imgui.h>
 
+#include <memory>
+
 class GrabInput : public Attribute, public std::enable_shared_from_this<GrabInput> {
     private:
         bool has_focus = false;
