@@ -12,7 +12,6 @@ add_executable(demo
     attributes/first_person_camera.cpp
     attributes/movement_controller.cpp
     attributes/toggle_wireframe.cpp
-    attributes/toggle_cursor.cpp
     attributes/grab_input.cpp
     attributes/material_adapter.cpp
 

@@ -203,6 +203,13 @@ bool Application::startup() {
     ImGui_ImplGlfw_InitForOpenGL(this->win, true);
     ImGui_ImplOpenGL3_Init("#version 410");
 
+    // Send Initialize events
+    auto attributes = Application::attribute_event_subscribers[EventType::Initialize];
+
+    for (auto attr = attributes.begin(); attr != attributes.end(); ++attr) {
+        (*attr)->receive_event({EventType::Initialize, {}});
+    }
+
     return true;
 }
 
@@ -543,11 +550,7 @@ void Application::add_attribute(std::shared_ptr<Attribute> attr) {
     std::optional<EventType> event_type;
 
     while ((event_type = attr->pop_subscription_request()).has_value()) {
-        if (*event_type == EventType::Initialize) {
-            attr->receive_event({EventType::Initialize, {}});
-        } else {
-            Application::attribute_event_subscribers[*event_type].push_back(attr);
-        }
+        Application::attribute_event_subscribers[*event_type].push_back(attr);
     }
 }
 

@@ -17,7 +17,6 @@
 #include "demo/attributes/basic_motion.h"
 #include "demo/attributes/toggle_wireframe.h"
 #include "demo/attributes/movement_controller.h"
-#include "demo/attributes/toggle_cursor.h"
 #include "demo/attributes/grab_input.h"
 #include "demo/attributes/material_adapter.h"
 
@@ -93,7 +92,6 @@ DemoController::DemoController() {
 
     ADD_GENERIC_ATTRIBUTE(script_layer, FirstPersonCamera);
     ADD_GENERIC_ATTRIBUTE(script_layer, MovementController);
-    ADD_GENERIC_ATTRIBUTE(script_layer, ToggleCursor);
 
     ADD_GENERIC_ATTRIBUTE(material_editor, GrabInput);
     ADD_ATTRIBUTE(material_editor, MaterialAdapter, &suzanne_mat);

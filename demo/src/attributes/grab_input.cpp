@@ -1,43 +1,38 @@
 #include "demo/attributes/grab_input.h"
+#include "demo/custom_event.h"
 
 #include "engine/application.h"
+#include "engine/global.h"
 #include "engine/common.h"
+#include "engine/event.h"
 
-#include <imgui.h>
+void GrabInput::handle_key_event(int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS) {
+        this->cursor_enabled = !this->cursor_enabled;
 
-void GrabInput::handle_cursor_position(double x, double y) {
-    ImGuiIO io = ImGui::GetIO();
-
-    bool prev = this->in_window;
-    this->in_window = io.WantCaptureMouse;
-
-    if (this->in_window && !prev) {
-        Application::request_exclusive_input(CursorPositionInput, this->getptr());
-        Application::request_exclusive_input(ScrollInput, this->getptr());
-    } else if (!this->in_window && prev) {
-        Application::release_exclusive_input(CursorPositionInput);
-        Application::release_exclusive_input(ScrollInput);
-    }
-}
-
-void GrabInput::handle_mouse_click(int button, int action, int mods) {
-    bool prev = this->has_focus;
-    this->has_focus = this->in_window;
-
-    if (this->has_focus && !prev) {
-        Application::request_exclusive_input(KeyInput, this->getptr());
-    } else if (!this->has_focus && prev) {
-        Application::release_exclusive_input(KeyInput);
+        if (this->cursor_enabled) {
+            // Enable the cursor
+            glfwSetInputMode(Application::win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            Application::request_exclusive_input(CursorPositionInput, this->getptr());
+            Application::request_exclusive_input(ScrollInput, this->getptr());
+            Application::request_exclusive_input(KeyInput, this->getptr());
+        } else {
+            // Disable the cursor
+            glfwSetInputMode(Application::win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            Application::release_exclusive_input(CursorPositionInput);
+            Application::release_exclusive_input(ScrollInput);
+            Application::release_exclusive_input(KeyInput);
+        }
     }
 }
 
 void GrabInput::receive_event(Event event) {
-    switch (event.type) {
-    case EventType::CursorPosition:
-        this->handle_cursor_position(DOUBLE(0), DOUBLE(1));
+    switch (static_cast<int>(event.type)) {
+    case EventType::Initialize:
+        this->handle_key_event(GLFW_KEY_LEFT_CONTROL, 0, GLFW_PRESS, 0);
         break;
-    case EventType::MouseButton:
-        this->handle_mouse_click(INT(0), INT(1), INT(2));
+    case EventType::Key:
+        this->handle_key_event(INT(0), INT(1), INT(2), INT(3));
         break;
     default:
         break;

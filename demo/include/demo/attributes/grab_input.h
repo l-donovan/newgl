@@ -3,23 +3,19 @@
 #include "engine/attribute.h"
 #include "engine/event.h"
 
-#include <imgui.h>
+#include "demo/custom_event.h"
 
 #include <memory>
 
 class GrabInput : public Attribute, public std::enable_shared_from_this<GrabInput> {
     private:
-        bool has_focus = false;
-        bool in_window = false;
+        bool cursor_enabled = false;
 
-        void handle_cursor_position(double x, double y);
-        void handle_mouse_click(int button, int action, int mods);
-
-        ImGuiIO io;
+        void handle_key_event(int key, int scancode, int action, int mods);
     public:
         GrabInput() {
-            this->subscribe(EventType::CursorPosition);
-            this->subscribe(EventType::MouseButton);
+            this->subscribe(EventType::Initialize);
+            this->subscribe(EventType::Key);
         };
 
         void receive_event(Event event);
