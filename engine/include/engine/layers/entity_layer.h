@@ -53,6 +53,11 @@ class EntityLayer : public Layer {
         GLuint uv_count = 0;
         GLuint normal_count = 0;
         GLuint tri_count = 0;
+
+        float enclosing_sphere_radius;
+        glm::vec3 center;
+        glm::mat4 transform;
+        glm::vec3 position;
     public:
         EntityLayer();
 
