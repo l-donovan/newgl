@@ -23,6 +23,9 @@ class FirstPersonCamera : public Attribute {
 
         double last_x;
         double last_y;
+
+        double horizontal_speed = 2.0;
+        double vertical_speed = 2.0;
     public:
         FirstPersonCamera() {
             this->subscribe(EventType::Initialize);
