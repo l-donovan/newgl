@@ -69,8 +69,7 @@ DemoController::DemoController() {
 
     suzanne.request_resource(Texture, ROOT_DIR + "/demo/resources/images/chinese_garden.png");
     suzanne.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/suzanne.obj");
-    ADD_ATTRIBUTE(suzanne, BasicMotion);
-    ADD_ATTRIBUTE(suzanne, ToggleWireframe);
+    ADD_ATTRIBUTE(suzanne_instances, ToggleWireframe);
 
     suzanne_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     suzanne_mat.set("use_texture", 0);
@@ -81,6 +80,7 @@ DemoController::DemoController() {
     cactus.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/cactus.obj");
     cactus.set_scale(4.0f);
     cactus.set_position(-1.0f, 1.0f, 1.0f);
+    ADD_ATTRIBUTE(cactus, BasicMotion);
     ADD_ATTRIBUTE(cactus, ToggleWireframe);
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
