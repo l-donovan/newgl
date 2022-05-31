@@ -425,10 +425,6 @@ void Application::process_mt_events() {
 }
 
 void Application::main_loop() {
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
     std::thread application_event_thread(&Application::process_events, this, false);
     std::thread controller_event_thread(&Controller::process_events, Application::controller, false);
 
@@ -520,7 +516,6 @@ void Application::main_loop() {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteVertexArrays(1, &vao);
     glfwDestroyWindow(this->win);
     glfwTerminate();
 }

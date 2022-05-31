@@ -1,5 +1,4 @@
 #include "demo/demo_controller.h"
-
 #include "engine/global.h"
 #include "engine/common.h"
 #include "engine/layer.h"
@@ -29,6 +28,10 @@ Shader phong_shader(
     ROOT_DIR + "/demo/resources/shaders/phong.v.glsl",
     ROOT_DIR + "/demo/resources/shaders/phong.f.glsl");
 
+Shader instance_shader(
+    ROOT_DIR + "/demo/resources/shaders/phong_instance.v.glsl",
+    ROOT_DIR + "/demo/resources/shaders/phong_instance.f.glsl");
+
 Shader text_shader(
     ROOT_DIR + "/demo/resources/shaders/text.v.glsl",
     ROOT_DIR + "/demo/resources/shaders/text.f.glsl");
@@ -37,7 +40,6 @@ Shader sky_shader(
     ROOT_DIR + "/demo/resources/shaders/sky.v.glsl",
     ROOT_DIR + "/demo/resources/shaders/sky.f.glsl");
 
-EntityLayer suzanne;
 EntityLayer cactus;
 TextLayer framerate_layer;
 SkyLayer skybox;
@@ -47,30 +49,24 @@ MaterialEditor material_editor;
 Material suzanne_mat;
 Material cactus_mat;
 
-bool instance_handler(int num) {
-    // Skip every 13th suzanne, just for fun
-    if (num % 13 == 0) {
-        return false;
-    }
-
+glm::mat4 instance_handler(glm::mat4 base, int num) {
     int row = num / 50;
     int col = num % 50;
     float dist = sqrtf(row * row + col * col);
 
-    suzanne.set_position(1.5f * row, sinf(dist), 1.5f * col);
+    glm::vec3 position((2.0f + cosf(dist)) * row, sinf(dist), 2.0f * col);
+    glm::mat4 model = glm::translate(base, position);
 
-    return true;
+    return model;
 }
 
-InstanceLayer<EntityLayer> suzanne_instances(2500, &suzanne, instance_handler);
+InstanceLayer suzanne(instance_handler);
 
 DemoController::DemoController() {
     ADD_ATTRIBUTE(framerate_layer, CaptureFramerate);
 
     suzanne.request_resource(Texture, ROOT_DIR + "/demo/resources/images/chinese_garden.png");
     suzanne.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/suzanne.obj");
-    ADD_ATTRIBUTE(suzanne, BasicMotion);
-    ADD_ATTRIBUTE(suzanne, ToggleWireframe);
 
     suzanne_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     suzanne_mat.set("use_texture", 0);
@@ -81,6 +77,7 @@ DemoController::DemoController() {
     cactus.request_resource(MeshResource, ROOT_DIR + "/demo/resources/models/cactus.obj");
     cactus.set_scale(4.0f);
     cactus.set_position(-1.0f, 1.0f, 1.0f);
+    ADD_ATTRIBUTE(cactus, BasicMotion);
     ADD_ATTRIBUTE(cactus, ToggleWireframe);
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
@@ -105,7 +102,7 @@ DemoController::~DemoController() {
 void DemoController::pre_application_startup() {
     // We have to send some events to the application to setup our layers and shaders
 
-    ADD_LAYER(suzanne_instances, phong_shader);
+    ADD_LAYER(suzanne, instance_shader);
     ADD_LAYER(cactus, phong_shader);
     ADD_LAYER(framerate_layer, text_shader);
     ADD_LAYER(skybox, sky_shader);
@@ -122,7 +119,7 @@ void DemoController::post_application_startup() {
 void DemoController::process_resource_requests() {
     std::optional<resource_request_t> request;
 
-    for (auto layer : {(Layer*) &suzanne, (Layer*) &cactus, (Layer*) &framerate_layer, (Layer*) &skybox}) { // TODO: This is awful
+    for (auto layer : {(Layer*) &skybox, (Layer*) &cactus, (Layer*) &suzanne}) { // TODO: This is awful
         while ((request = layer->pop_resource_request()).has_value()) {
             switch (request->type) {
             case MeshResource:

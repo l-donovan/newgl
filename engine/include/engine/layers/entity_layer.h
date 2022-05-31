@@ -22,6 +22,8 @@ class EntityLayer : public Layer {
         GLuint vbo_normals = 0;
         GLuint ibo_faces = 0;
 
+        GLuint vao = 0;
+
         // Layer positioning
         float x = 0.0f;
         float y = 0.0f;

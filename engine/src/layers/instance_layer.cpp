@@ -8,7 +8,7 @@
 
 #include <plog/Log.h>
 
-#include "engine/layers/entity_layer.h"
+#include "engine/layers/instance_layer.h"
 #include "engine/application.h"
 #include "engine/global.h"
 #include "engine/common.h"
@@ -26,31 +26,34 @@
 
 using std::string;
 
-EntityLayer::EntityLayer() {}
-
-void EntityLayer::setup() {
+void InstanceLayer::setup() {
+    glGenBuffers(1, &this->vbo_models);
     glGenBuffers(1, &this->vbo_vertices);
     glGenBuffers(1, &this->vbo_normals);
     glGenBuffers(1, &this->vbo_uvs);
     glGenBuffers(1, &this->ibo_faces);
     glGenVertexArrays(1, &this->vao);
 
-    this->model_location = this->shader->get_uniform_location("model");
     this->view_location = this->shader->get_uniform_location("view");
     this->projection_location = this->shader->get_uniform_location("projection");
     this->camera_location = this->shader->get_uniform_location("camera");
     this->texture_location = this->shader->get_uniform_location("texture_0");
 
+    GLint m = this->shader->get_attrib_location("model");
+    this->model_locations[0] = m + 0;
+    this->model_locations[1] = m + 1;
+    this->model_locations[2] = m + 2;
+    this->model_locations[3] = m + 3;
     this->vertex_location = this->shader->get_attrib_location("vertex");
     this->uv_location = this->shader->get_attrib_location("uv");
     this->normal_location = this->shader->get_attrib_location("normal");
 }
 
-void EntityLayer::update() {
+void InstanceLayer::update() {
     this->calculate_attribute_buffers();
 }
 
-void EntityLayer::receive_resource(ResourceType type, string name, void *data) {
+void InstanceLayer::receive_resource(ResourceType type, string name, void *data) {
     if (type == MeshResource) {
         Mesh *mesh = (Mesh*) data;
 
@@ -85,6 +88,17 @@ void EntityLayer::receive_resource(ResourceType type, string name, void *data) {
         this->transform = glm::translate(glm::mat4(1), center); // TODO: Not implemented
         this->position = glm::vec3(this->x, this->y, this->z) + this->center;
 
+        _models = new glm::mat4[this->instance_count];
+        glm::mat4 base_model = this->transform;
+        base_model = glm::translate(base_model, this->position);
+        base_model = glm::scale(base_model, glm::vec3(this->sx, this->sy, this->sz));
+
+        for (int i = 0; i < this->instance_count; ++i) {
+            _models[i] = this->instance_func(base_model, i);
+        }
+
+        this->models = (float*)&_models[0];
+
         this->calculate_attribute_buffers();
     } else if (type == Texture) {
         GLuint *tex = (GLuint*) data;
@@ -93,7 +107,7 @@ void EntityLayer::receive_resource(ResourceType type, string name, void *data) {
     }
 }
 
-void EntityLayer::teardown() {
+void InstanceLayer::teardown() {
     glDeleteBuffers(1, &this->vbo_vertices);
     glDeleteBuffers(1, &this->vbo_normals);
     glDeleteBuffers(1, &this->vbo_uvs);
@@ -104,7 +118,7 @@ void EntityLayer::teardown() {
     glDeleteVertexArrays(1, &this->vao);
 }
 
-void EntityLayer::set_position(float x, float y, float z) {
+void InstanceLayer::set_position(float x, float y, float z) {
     this->x = x;
     this->y = y;
     this->z = z;
@@ -112,7 +126,7 @@ void EntityLayer::set_position(float x, float y, float z) {
     this->position = glm::vec3(this->x, this->y, this->z) + this->center;
 }
 
-void EntityLayer::set_scale(float x, float y, float z) {
+void InstanceLayer::set_scale(float x, float y, float z) {
     if (y == 0.0f || z == 0.0f)
         y = z = x;
 
@@ -121,11 +135,12 @@ void EntityLayer::set_scale(float x, float y, float z) {
     this->sz = z;
 }
 
-void EntityLayer::calculate_attribute_buffers() {
+void InstanceLayer::calculate_attribute_buffers() {
     PLOGD << "Calculating attribute buffers";
 
     glBindVertexArray(this->vao);
 
+    // Vertices
     glEnableVertexAttribArray(this->vertex_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
     glBufferData(
@@ -136,6 +151,7 @@ void EntityLayer::calculate_attribute_buffers() {
     );
     glVertexAttribPointer(this->vertex_location, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
+    // UVs
     glEnableVertexAttribArray(this->uv_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_uvs);
     glBufferData(
@@ -146,6 +162,7 @@ void EntityLayer::calculate_attribute_buffers() {
     );
     glVertexAttribPointer(this->uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    // Normals
     glEnableVertexAttribArray(this->normal_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_normals);
     glBufferData(
@@ -156,6 +173,28 @@ void EntityLayer::calculate_attribute_buffers() {
     );
     glVertexAttribPointer(this->normal_location, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+    // Model matrices
+    glEnableVertexAttribArray(this->model_locations[0]);
+    glEnableVertexAttribArray(this->model_locations[1]);
+    glEnableVertexAttribArray(this->model_locations[2]);
+    glEnableVertexAttribArray(this->model_locations[3]);
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_models);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        this->instance_count * sizeof(glm::mat4),
+        this->models,
+        GL_STATIC_DRAW
+    );
+    glVertexAttribPointer(this->model_locations[0], 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(0));
+    glVertexAttribPointer(this->model_locations[1], 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 4));
+    glVertexAttribPointer(this->model_locations[2], 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 8));
+    glVertexAttribPointer(this->model_locations[3], 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 12));
+    glVertexAttribDivisor(this->model_locations[0], 1);
+    glVertexAttribDivisor(this->model_locations[1], 1);
+    glVertexAttribDivisor(this->model_locations[2], 1);
+    glVertexAttribDivisor(this->model_locations[3], 1);
+
+    // Faces
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,
@@ -167,47 +206,7 @@ void EntityLayer::calculate_attribute_buffers() {
     glBindVertexArray(0);
 }
 
-void EntityLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
-    float distance_from_center;
-    float distance_from_enclosing_sphere;
-    float planar_distance_from_camera;
-    float angle;
-    float angle_threshold;
-
-    // Before doing any expensive rendering, see if we can skip drawing the entity altogether
-    // by checking if all of the sphere enclosing its bounding box is outside our FOV.
-
-    glm::vec3 camera_direction(-sinf(camera.yaw), sinf(camera.pitch), -cosf(camera.yaw)); // TODO: Can be saved in camera_t
-    camera_direction = glm::normalize(camera_direction); // TODO: See above
-
-    // We find the distance from the the center of the mesh to the line formed by the camera's position and direction.
-    // Then we can subtract the radius to find the distance to the enclosing sphere.
-    // NOTE: Adapted from https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
-    distance_from_center = glm::length(glm::cross(camera_direction, camera.position - this->position));
-    distance_from_enclosing_sphere = distance_from_center - this->enclosing_sphere_radius;
-
-    // We image a plane defined using the camera's direction as its normal. We then compute the distance
-    // the plane must be along the camera's direction vector for it to be coplanar with the mesh's center.
-    // NOTE: Adapted from https://en.wikibooks.org/wiki/Linear_Algebra/Orthogonal_Projection_Onto_a_Line
-    glm::vec3 proj = glm::dot(this->position - camera.position, camera_direction) * camera_direction;
-    planar_distance_from_camera = glm::length(proj);
-    angle = abs(atan2f(distance_from_enclosing_sphere, planar_distance_from_camera));
-
-    // Because our screen (probably) isn't circular, we'll have blind spots in the corners of the
-    // screen if we use the camera's VFOV as the threshold value. Instead we circumscribe a circle
-    // around the screen and treat that as our FOV threshold.
-    angle_threshold = glm::radians(camera.vfov) * Application::width / Application::height;
-
-    // Finally, skip rendering the entity if the angle is greater than our calculated threshold.
-    if (angle > angle_threshold) {
-        return;
-    }
-
-    glm::mat4 model = this->transform;
-    model = glm::translate(model, this->position);
-    model = glm::scale(model, glm::vec3(this->sx, this->sy, this->sz));
-
-    glUniformMatrix4fv(this->model_location, 1, GL_FALSE, glm::value_ptr(model));
+void InstanceLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glUniformMatrix4fv(this->view_location, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(this->projection_location, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -218,6 +217,6 @@ void EntityLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glUniform1i(this->texture_location, 0);
 
     glBindVertexArray(this->vao);
-    glDrawElements(GL_TRIANGLES, this->tri_count, GL_UNSIGNED_SHORT, 0);
+    glDrawElementsInstanced(GL_TRIANGLES, this->tri_count, GL_UNSIGNED_SHORT, 0, this->instance_count);
     glBindVertexArray(0);
 }

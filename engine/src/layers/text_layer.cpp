@@ -52,6 +52,7 @@ void TextLayer::setup() {
     glGenBuffers(1, &this->vbo_uvs);
     glGenBuffers(1, &this->vbo_colors);
     glGenBuffers(1, &this->ibo_faces);
+    glGenVertexArrays(1, &this->vao);
 
     this->model_location = this->shader->get_uniform_location("model");
     this->texture_location = this->shader->get_uniform_location("atlas");
@@ -244,6 +245,8 @@ void TextLayer::teardown() {
     glDeleteBuffers(1, &this->ibo_faces);
 
     glDeleteTextures(1, &this->atlas_texture_id);
+
+    glDeleteVertexArrays(1, &this->vao);
 }
 
 void TextLayer::set_text(string text) {
@@ -399,6 +402,9 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
 
     // Populate buffers
 
+    glBindVertexArray(this->vao);
+
+    glEnableVertexAttribArray(this->vertex_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
     glBufferData(
         GL_ARRAY_BUFFER,
@@ -406,7 +412,9 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
         this->vertices,
         GL_STATIC_DRAW
     );
+    glVertexAttribPointer(this->vertex_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    glEnableVertexAttribArray(this->uv_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_uvs);
     glBufferData(
         GL_ARRAY_BUFFER,
@@ -414,7 +422,9 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
         this->uvs,
         GL_STATIC_DRAW
     );
+    glVertexAttribPointer(this->uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    glEnableVertexAttribArray(this->color_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_colors);
     glBufferData(
         GL_ARRAY_BUFFER,
@@ -422,6 +432,7 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
         this->colors,
         GL_STATIC_DRAW
     );
+    glVertexAttribPointer(this->color_location, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
     glBufferData(
@@ -430,11 +441,12 @@ void TextLayer::calculate_attribute_buffers(bool full_draw) {
         this->faces,
         GL_STATIC_DRAW
     );
+
+    glBindVertexArray(0);
 }
 
 void TextLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glm::vec3 translation(0.0f, 0.0f, 0.0f);
-
     glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
 
     glUniformMatrix4fv(this->model_location, 1, GL_FALSE, glm::value_ptr(model));
@@ -443,22 +455,7 @@ void TextLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glBindTexture(GL_TEXTURE_2D, this->atlas_texture_id);
     glUniform1i(this->texture_location, 0);
 
-    glEnableVertexAttribArray(this->vertex_location);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-    glVertexAttribPointer(this->vertex_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glEnableVertexAttribArray(this->uv_location);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_uvs);
-    glVertexAttribPointer(this->uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glEnableVertexAttribArray(this->color_location);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_colors);
-    glVertexAttribPointer(this->color_location, 4, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
+    glBindVertexArray(this->vao);
     glDrawElements(GL_TRIANGLES, 6 * this->char_count, GL_UNSIGNED_SHORT, 0);
-
-    glDisableVertexAttribArray(this->vertex_location);
-    glDisableVertexAttribArray(this->uv_location);
-    glDisableVertexAttribArray(this->color_location);
+    glBindVertexArray(0);
 }

@@ -20,6 +20,7 @@ SkyLayer::SkyLayer() {
 void SkyLayer::setup() {
     glGenBuffers(1, &this->vbo_vertices);
     glGenBuffers(1, &this->ibo_faces);
+    glGenVertexArrays(1, &this->vao);
 
     this->view_location = this->shader->get_uniform_location("view");
     this->projection_location = this->shader->get_uniform_location("projection");
@@ -34,6 +35,14 @@ void SkyLayer::setup() {
         -1,  1, 0
     };
 
+    GLushort faces[] = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    glBindVertexArray(this->vao);
+
+    glEnableVertexAttribArray(this->vertex_location);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
     glBufferData(
         GL_ARRAY_BUFFER,
@@ -41,11 +50,7 @@ void SkyLayer::setup() {
         vertices,
         GL_STATIC_DRAW
     );
-
-    GLushort faces[] = {
-        0, 1, 2,
-        0, 2, 3
-    };
+    glVertexAttribPointer(this->vertex_location, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
     glBufferData(
@@ -54,6 +59,8 @@ void SkyLayer::setup() {
         faces,
         GL_STATIC_DRAW
     );
+
+    glBindVertexArray(0);
 }
 
 void SkyLayer::update() {}
@@ -70,6 +77,8 @@ void SkyLayer::teardown() {
     glDeleteBuffers(1, &this->ibo_faces);
 
     glDeleteTextures(1, &this->texture_0);
+
+    glDeleteVertexArrays(1, &this->vao);
 }
 
 void SkyLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
@@ -80,12 +89,7 @@ void SkyLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     glBindTexture(GL_TEXTURE_2D, this->texture_0);
     glUniform1i(this->texture_location, 0);
 
-    glEnableVertexAttribArray(this->vertex_location);
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
-    glVertexAttribPointer(this->vertex_location, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo_faces);
+    glBindVertexArray(this->vao);
     glDrawElements(GL_TRIANGLES, 2 * 3, GL_UNSIGNED_SHORT, 0);
-
-    glDisableVertexAttribArray(this->vertex_location);
+    glBindVertexArray(0);
 }

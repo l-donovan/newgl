@@ -20,6 +20,8 @@ class SkyLayer : public Layer {
         GLuint vbo_vertices = 0;
         GLuint ibo_faces = 0;
 
+        GLuint vao = 0;
+
         // Textures
         GLuint texture_0 = 0;
 

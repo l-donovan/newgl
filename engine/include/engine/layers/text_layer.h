@@ -25,6 +25,8 @@ class TextLayer : public Layer {
         GLuint vbo_colors = 0;
         GLuint ibo_faces = 0;
 
+        GLuint vao = 0;
+
         // Buffers
         float *vertices = nullptr;
         float *uvs = nullptr;
