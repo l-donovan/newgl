@@ -42,11 +42,16 @@ void FirstPersonCamera::handle_window_resize(int w, int h) {
 }
 
 void FirstPersonCamera::handle_cursor_position(double x, double y) {
+    double delta_x = x - this->last_x;
+    double delta_y = y - this->last_y;
+
     this->last_x = x;
     this->last_y = y;
 
-    this->camera->yaw = (0.5 - x) * TAU;
-    this->camera->pitch = (0.5 - y) * PI;
+    this->camera->yaw -= this->horizontal_speed * delta_x;
+    this->camera->pitch -= this->vertical_speed * delta_y;
+
+    this->camera->pitch = fmin(fmax(this->camera->pitch, -0.5 * PI), 0.5 * PI);
 
     this->camera->view = this->construct_view(
         this->camera->position,

@@ -186,7 +186,7 @@ void EntityLayer::draw(glm::mat4 view, glm::mat4 projection, camera_t camera) {
     distance_from_center = glm::length(glm::cross(camera_direction, camera.position - this->position));
     distance_from_enclosing_sphere = distance_from_center - this->enclosing_sphere_radius;
 
-    // We image a plane defined using the camera's direction as its normal. We then compute the distance
+    // We imagine a plane defined using the camera's direction as its normal. We then compute the distance
     // the plane must be along the camera's direction vector for it to be coplanar with the mesh's center.
     // NOTE: Adapted from https://en.wikibooks.org/wiki/Linear_Algebra/Orthogonal_Projection_Onto_a_Line
     glm::vec3 proj = glm::dot(this->position - camera.position, camera_direction) * camera_direction;

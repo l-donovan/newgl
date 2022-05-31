@@ -78,7 +78,7 @@ DemoController::DemoController() {
     cactus.set_scale(4.0f);
     cactus.set_position(-1.0f, 1.0f, 1.0f);
     ADD_ATTRIBUTE(cactus, BasicMotion);
-    ADD_ATTRIBUTE(cactus, ToggleWireframe);
+    //ADD_ATTRIBUTE(cactus, ToggleWireframe); // NOTE: This is broken. Disabling until fixed
 
     cactus_mat.set("color", glm::vec3(0.6, 0.5, 0.6));
     cactus_mat.set("use_texture", 1);
